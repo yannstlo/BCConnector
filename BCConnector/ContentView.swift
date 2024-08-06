@@ -2,6 +2,8 @@ import SwiftUI
 import AuthenticationServices
 import Foundation
 
+@StateObject private var settingsManager = SettingsManager()
+
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @State private var isShowingWebView = false
@@ -48,14 +50,14 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $isShowingSettings) {
-                SettingsView()
+                SettingsView(settings: settingsManager)
             }
         }
     }
 }
 
 struct SettingsView: View {
-    @ObservedObject private var settings = SettingsManager()
+    @ObservedObject var settings: SettingsManager
     
     var body: some View {
         Form {

@@ -3,10 +3,12 @@ import SwiftUI
 @main
 struct BCConnectorApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
+    @StateObject private var settingsManager = SettingsManager.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(settingsManager)
                 .onOpenURL { url in
                     Task {
                         await handleURL(url)

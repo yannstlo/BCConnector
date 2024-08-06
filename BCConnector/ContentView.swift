@@ -6,6 +6,7 @@ struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @EnvironmentObject private var settingsManager: SettingsManager
     @State private var isShowingSettings = false
+    @State private var authContextProvider: AuthContextProvider?
     
     var body: some View {
         if authManager.isAuthenticated {
@@ -47,6 +48,7 @@ struct ContentView: View {
     }
     
     private func startAuthSession(url: URL) {
+        authContextProvider = AuthContextProvider()
         let session = ASWebAuthenticationSession(
             url: url,
             callbackURLScheme: "ca.yann.bcconnector.auth"
@@ -70,7 +72,7 @@ struct ContentView: View {
             }
         }
         
-        session.presentationContextProvider = AuthContextProvider()
+        session.presentationContextProvider = authContextProvider
         session.prefersEphemeralWebBrowserSession = true
         session.start()
     }

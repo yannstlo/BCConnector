@@ -7,6 +7,9 @@ enum APIError: Error {
     case noData
     case decodingError
     case authenticationError
+    case networkError(String)
+    case httpError(Int)
+    case tokenResponseError(String)
 }
 
 class APIClient: ObservableObject {

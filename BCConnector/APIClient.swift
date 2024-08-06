@@ -5,7 +5,7 @@ import Combine
 enum APIError: Error {
     case invalidURL
     case noData
-    case decodingError
+    case decodingError(String)
     case authenticationError
     case networkError(String)
     case httpError(Int)
@@ -46,7 +46,7 @@ class APIClient: ObservableObject {
             return try decoder.decode(T.self, from: data)
         } catch {
             print("Decoding error: \(error)")
-            throw APIError.decodingError
+            throw APIError.decodingError(error)
         }
     }
 }

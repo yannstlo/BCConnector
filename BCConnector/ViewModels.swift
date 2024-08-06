@@ -22,7 +22,7 @@ class CustomersViewModel: ObservableObject {
                 errorMessage = "Invalid URL: Please check your Business Central settings."
             case .networkError(let message):
                 errorMessage = "Network error: \(message)"
-            case .httpError(let statusCode):
+            case .httpError(let statusCode, let errorResponse):
                 switch statusCode {
                 case 403:
                     errorMessage = "Authorization error: You might not have permission to access customer data."
@@ -30,6 +30,9 @@ class CustomersViewModel: ObservableObject {
                     errorMessage = "Not Found error: The customer data resource might not exist."
                 default:
                     errorMessage = "HTTP error: Status code \(statusCode)"
+                }
+                if let errorDetails = errorResponse?.error {
+                    errorMessage! += " - \(errorDetails.message)"
                 }
             case .decodingError(let message):
                 errorMessage = "Decoding error: \(message)"

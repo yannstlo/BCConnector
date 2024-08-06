@@ -56,7 +56,7 @@ struct ContentView: View {
                 }
             }
         }
-        .onChange(of: authManager.isAuthenticated) { newValue in
+        .onChange(of: authManager.isAuthenticated) { _, newValue in
             if newValue {
                 selectedTab = 0
             }

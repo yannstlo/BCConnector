@@ -3,7 +3,6 @@ import Foundation
 class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
     
-    private init() {}
     @Published var clientId: String {
         didSet { UserDefaults.standard.set(clientId, forKey: "clientId") }
     }
@@ -20,7 +19,7 @@ class SettingsManager: ObservableObject {
         didSet { UserDefaults.standard.set(environment, forKey: "environment") }
     }
     
-    init() {
+    private init() {
         self.clientId = UserDefaults.standard.string(forKey: "clientId") ?? ""
         self.clientSecret = UserDefaults.standard.string(forKey: "clientSecret") ?? ""
         self.tenantId = UserDefaults.standard.string(forKey: "tenantId") ?? ""

@@ -1,10 +1,11 @@
 import Foundation
+import SwiftUI
 
 @MainActor
 class CustomersViewModel: ObservableObject {
     @Published var customers: [Customer] = []
     
-    private var settings = SettingsManager.shared
+    @ObservedObject private var settings = SettingsManager.shared
     
     func fetchCustomers() async {
         do {

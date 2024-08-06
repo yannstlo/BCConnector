@@ -33,9 +33,11 @@ class APIClient: ObservableObject {
         
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
         
         print("Sending request to URL: \(url)")
         print("Request headers: \(request.allHTTPHeaderFields ?? [:])")
+        print("Access Token: \(accessToken)")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -58,7 +60,10 @@ class APIClient: ObservableObject {
                 throw APIError.decodingError(error.localizedDescription)
             }
         case 400:
-            throw APIError.httpError(400, try? decodeErrorResponse(from: data))
+            let errorResponse = try? decodeErrorResponse(from: data)
+            print("Bad Request error: \(errorResponse?.error.message ?? "Unknown error")")
+            print("Error details: \(String(data: data, encoding: .utf8) ?? "No data")")
+            throw APIError.httpError(400, errorResponse)
         case 401:
             print("Authentication error: The access token might be invalid or expired.")
             throw APIError.authenticationError(try? decodeErrorResponse(from: data))

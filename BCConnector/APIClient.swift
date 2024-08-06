@@ -5,7 +5,7 @@ import Combine
 enum APIError: Error {
     case invalidURL
     case noData
-    case decodingError(Error)
+    case decodingError
     case authenticationError
     case networkError(String)
     case httpError(Int)
@@ -45,6 +45,7 @@ class APIClient: ObservableObject {
             let decoder = JSONDecoder()
             return try decoder.decode(T.self, from: data)
         } catch {
+            print("Decoding error: \(error)")
             throw APIError.decodingError
         }
     }

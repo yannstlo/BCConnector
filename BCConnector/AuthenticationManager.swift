@@ -177,6 +177,11 @@ class AuthenticationManager: ObservableObject {
             self.refreshToken = tokenResponse.refreshToken
             self.expirationDate = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
             
+            // If we didn't receive a refresh token, we should clear any existing one
+            if tokenResponse.refreshToken == nil {
+                self.refreshToken = nil
+            }
+            
             return tokenResponse.accessToken
         } catch {
             print("Error decoding token response: \(error)")
@@ -211,7 +216,7 @@ struct TokenResponse: Codable {
     let accessToken: String
     let tokenType: String
     let expiresIn: Int
-    let refreshToken: String
+    let refreshToken: String?
     
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"

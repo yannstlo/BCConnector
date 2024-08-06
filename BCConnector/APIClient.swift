@@ -34,6 +34,9 @@ class APIClient: ObservableObject {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
+        print("Sending request to URL: \(url)")
+        print("Request headers: \(request.allHTTPHeaderFields ?? [:])")
+        
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -49,9 +52,17 @@ class APIClient: ObservableObject {
                 print("Decoding error: \(error)")
                 throw APIError.decodingError(error.localizedDescription)
             }
+        case 400:
+            if let errorData = String(data: data, encoding: .utf8) {
+                print("HTTP 400 Error. Response body: \(errorData)")
+            }
+            throw APIError.httpError(400)
         case 401:
             throw APIError.authenticationError
         default:
+            if let errorData = String(data: data, encoding: .utf8) {
+                print("HTTP \(httpResponse.statusCode) Error. Response body: \(errorData)")
+            }
             throw APIError.httpError(httpResponse.statusCode)
         }
     }

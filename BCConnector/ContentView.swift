@@ -1,7 +1,10 @@
 import SwiftUI
+import AuthenticationServices
 
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
+    @State private var isShowingWebView = false
+    @State private var authURL: URL?
     
     var body: some View {
         if authManager.isAuthenticated {
@@ -24,11 +27,50 @@ struct ContentView: View {
             VStack {
                 Text("Welcome to BCConnector")
                 Button("Log In") {
-                    authManager.startAuthentication()
+                    if let url = authManager.startAuthentication() {
+                        authURL = url
+                        isShowingWebView = true
+                    }
+                }
+            }
+            .sheet(isPresented: $isShowingWebView) {
+                if let url = authURL {
+                    AuthWebView(url: url)
                 }
             }
         }
     }
+}
+
+struct AuthWebView: UIViewControllerRepresentable {
+    let url: URL
+    
+    func makeUIViewController(context: Context) -> ASWebAuthenticationSession.ViewController {
+        let authSession = ASWebAuthenticationSession(
+            url: url,
+            callbackURLScheme: "ca.yann.bcconnector.auth",
+            completionHandler: { callbackURL, error in
+                if let callbackURL = callbackURL {
+                    Task {
+                        do {
+                            try await AuthenticationManager.shared.handleRedirect(url: callbackURL)
+                        } catch {
+                            print("Error handling redirect: \(error)")
+                        }
+                    }
+                }
+            }
+        )
+        
+        let controller = ASWebAuthenticationSession.ViewController()
+        authSession.presentationContextProvider = controller
+        authSession.prefersEphemeralWebBrowserSession = true
+        authSession.start()
+        
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: ASWebAuthenticationSession.ViewController, context: Context) {}
 }
 
 struct CustomersView: View {

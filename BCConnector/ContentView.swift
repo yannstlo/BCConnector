@@ -10,48 +10,55 @@ struct ContentView: View {
     @State private var selectedTab = 0
     
     var body: some View {
-        if authManager.isAuthenticated {
-            // Your main app content
-            TabView(selection: $selectedTab) {
-                CustomersView()
-                    .tabItem {
-                        Label("Customers", systemImage: "person.3")
+        Group {
+            if authManager.isAuthenticated {
+                // Your main app content
+                TabView(selection: $selectedTab) {
+                    CustomersView()
+                        .tabItem {
+                            Label("Customers", systemImage: "person.3")
+                        }
+                        .tag(0)
+                    VendorsView()
+                        .tabItem {
+                            Label("Vendors", systemImage: "building.2")
+                        }
+                        .tag(1)
+                    OrdersView()
+                        .tabItem {
+                            Label("Orders", systemImage: "list.clipboard")
+                        }
+                        .tag(2)
+                    SettingsView(settings: settingsManager)
+                        .tabItem {
+                            Label("Settings", systemImage: "gear")
+                        }
+                        .tag(3)
+                }
+                .onAppear {
+                    // Set the initial tab to Customers when authenticated
+                    selectedTab = 0
+                }
+            } else {
+                VStack {
+                    Text("Welcome to BCConnector")
+                    Button("Log In") {
+                        if let url = authManager.startAuthentication() {
+                            startAuthSession(url: url)
+                        }
                     }
-                    .tag(0)
-                VendorsView()
-                    .tabItem {
-                        Label("Vendors", systemImage: "building.2")
+                    Button("Settings") {
+                        isShowingSettings = true
                     }
-                    .tag(1)
-                OrdersView()
-                    .tabItem {
-                        Label("Orders", systemImage: "list.clipboard")
-                    }
-                    .tag(2)
-                SettingsView(settings: settingsManager)
-                    .tabItem {
-                        Label("Settings", systemImage: "gear")
-                    }
-                    .tag(3)
+                }
+                .sheet(isPresented: $isShowingSettings) {
+                    SettingsView(settings: settingsManager)
+                }
             }
-            .onAppear {
-                // Set the initial tab to Customers when authenticated
+        }
+        .onChange(of: authManager.isAuthenticated) { newValue in
+            if newValue {
                 selectedTab = 0
-            }
-        } else {
-            VStack {
-                Text("Welcome to BCConnector")
-                Button("Log In") {
-                    if let url = authManager.startAuthentication() {
-                        startAuthSession(url: url)
-                    }
-                }
-                Button("Settings") {
-                    isShowingSettings = true
-                }
-            }
-            .sheet(isPresented: $isShowingSettings) {
-                SettingsView(settings: settingsManager)
             }
         }
     }

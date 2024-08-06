@@ -105,7 +105,7 @@ class AuthenticationManager: ObservableObject {
         }
 
         _ = try await exchangeCodeForTokens(code: code)
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.isAuthenticated = true
         }
     }

@@ -86,18 +86,47 @@ class AuthContextProvider: NSObject, ASWebAuthenticationPresentationContextProvi
 
 struct SettingsView: View {
     @ObservedObject var settings: SettingsManager
+    @State private var tempClientId: String = ""
+    @State private var tempClientSecret: String = ""
+    @State private var tempTenantId: String = ""
+    @State private var tempCompanyId: String = ""
+    @State private var tempEnvironment: String = ""
     
     var body: some View {
         Form {
             Section(header: Text("Business Central Settings")) {
-                TextField("Client ID", text: $settings.clientId)
-                SecureField("Client Secret", text: $settings.clientSecret)
-                TextField("Tenant ID", text: $settings.tenantId)
-                TextField("Company ID", text: $settings.companyId)
-                TextField("Environment", text: $settings.environment)
+                TextField("Client ID", text: $tempClientId)
+                SecureField("Client Secret", text: $tempClientSecret)
+                TextField("Tenant ID", text: $tempTenantId)
+                TextField("Company ID", text: $tempCompanyId)
+                TextField("Environment", text: $tempEnvironment)
+            }
+            
+            Section {
+                Button("Save Changes") {
+                    settings.clientId = tempClientId
+                    settings.clientSecret = tempClientSecret
+                    settings.tenantId = tempTenantId
+                    settings.companyId = tempCompanyId
+                    settings.environment = tempEnvironment
+                }
+            }
+            
+            Section(header: Text("Current Values")) {
+                Text("Client ID: \(settings.clientId)")
+                Text("Tenant ID: \(settings.tenantId)")
+                Text("Company ID: \(settings.companyId)")
+                Text("Environment: \(settings.environment)")
             }
         }
         .navigationTitle("Settings")
+        .onAppear {
+            tempClientId = settings.clientId
+            tempClientSecret = settings.clientSecret
+            tempTenantId = settings.tenantId
+            tempCompanyId = settings.companyId
+            tempEnvironment = settings.environment
+        }
     }
 }
 

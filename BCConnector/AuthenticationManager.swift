@@ -40,6 +40,12 @@ class AuthenticationManager: ObservableObject {
     }
     
     func startAuthentication() -> URL? {
+        print("Starting authentication...")
+        print("Client ID: \(settings.clientId)")
+        print("Tenant ID: \(settings.tenantId)")
+        print("Redirect URI: \(redirectUri)")
+        print("Scope: \(scope)")
+        
         var components = URLComponents(string: authorizationEndpoint)
         components?.queryItems = [
             URLQueryItem(name: "client_id", value: settings.clientId),

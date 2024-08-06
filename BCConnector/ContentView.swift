@@ -88,7 +88,16 @@ struct AuthWebView: UIViewControllerRepresentable {
         }
         
         func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-            UIApplication.shared.windows.first!
+            if #available(iOS 15.0, *) {
+                return UIApplication.shared.connectedScenes
+                    .filter { $0.activationState == .foregroundActive }
+                    .compactMap { $0 as? UIWindowScene }
+                    .first?
+                    .windows
+                    .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+            } else {
+                return UIApplication.shared.windows.first ?? ASPresentationAnchor()
+            }
         }
     }
 }

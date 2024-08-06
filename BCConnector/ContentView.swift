@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import Foundation
 
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared

@@ -76,7 +76,8 @@ struct AuthWebView: UIViewControllerRepresentable {
     let url: URL
     @Environment(\.presentationMode) var presentationMode
     
-    func makeUIViewController(context: Context) -> ASWebAuthenticationSession {
+    func makeUIViewController(context: Context) -> UIViewController {
+        let controller = UIViewController()
         let authSession = ASWebAuthenticationSession(
             url: url,
             callbackURLScheme: "ca.yann.bcconnector.auth",
@@ -102,7 +103,7 @@ struct AuthWebView: UIViewControllerRepresentable {
         authSession.prefersEphemeralWebBrowserSession = true
         authSession.start()
         
-        return authSession
+        return controller
     }
     
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}

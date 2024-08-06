@@ -1,8 +1,6 @@
 import Foundation
 import SwiftUI
 
-@_exported import BCConnector
-
 @MainActor
 class CustomersViewModel: ObservableObject {
     @Published var customers: [Customer] = []

@@ -101,7 +101,7 @@ class AuthenticationManager: ObservableObject {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let code = components.queryItems?.first(where: { $0.name == "code" })?.value
         else {
-            throw APIError.authenticationError
+            throw APIError.authenticationError(nil)
         }
 
         _ = try await exchangeCodeForTokens(code: code)

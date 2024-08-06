@@ -5,6 +5,7 @@ struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @State private var isShowingWebView = false
     @State private var authURL: URL?
+    @State private var isShowingSettings = false
     
     var body: some View {
         if authManager.isAuthenticated {
@@ -22,6 +23,10 @@ struct ContentView: View {
                     .tabItem {
                         Label("Orders", systemImage: "list.clipboard")
                     }
+                SettingsView()
+                    .tabItem {
+                        Label("Settings", systemImage: "gear")
+                    }
             }
         } else {
             VStack {
@@ -32,13 +37,36 @@ struct ContentView: View {
                         isShowingWebView = true
                     }
                 }
+                Button("Settings") {
+                    isShowingSettings = true
+                }
             }
             .sheet(isPresented: $isShowingWebView) {
                 if let url = authURL {
                     AuthWebView(url: url)
                 }
             }
+            .sheet(isPresented: $isShowingSettings) {
+                SettingsView()
+            }
         }
+    }
+}
+
+struct SettingsView: View {
+    @ObservedObject private var settings = SettingsManager()
+    
+    var body: some View {
+        Form {
+            Section(header: Text("Business Central Settings")) {
+                TextField("Client ID", text: $settings.clientId)
+                SecureField("Client Secret", text: $settings.clientSecret)
+                TextField("Tenant ID", text: $settings.tenantId)
+                TextField("Company ID", text: $settings.companyId)
+                TextField("Environment", text: $settings.environment)
+            }
+        }
+        .navigationTitle("Settings")
     }
 }
 

@@ -1,23 +1,22 @@
 import Foundation
-import UIKit
+import SwiftUI
 
-class AuthenticationManager : ObservableObject {
+class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
-    private init() {}
     
-    private let clientId = "YOUR_ACTUAL_CLIENT_ID"
-    private let clientSecret = "YOUR_ACTUAL_CLIENT_SECRET"
+    @ObservedObject private var settings = SettingsManager()
+    
     private let redirectUri = "ca.yann.bcconnector.auth://oauth2redirect"
     private let scope = "https://api.businesscentral.dynamics.com/.default"
-    private let tenantId = "YOUR_ACTUAL_TENANT_ID"
-    private let authorizationEndpoint: String
-    private let tokenEndpoint: String
     
-    private override init() {
-        self.authorizationEndpoint = "https://login.microsoftonline.com/\(tenantId)/oauth2/v2.0/authorize"
-        self.tokenEndpoint = "https://login.microsoftonline.com/\(tenantId)/oauth2/v2.0/token"
-        super.init()
+    private var authorizationEndpoint: String {
+        "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/authorize"
     }
+    private var tokenEndpoint: String {
+        "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/token"
+    }
+    
+    private init() {}
     
     @Published private(set) var isAuthenticated = false
     

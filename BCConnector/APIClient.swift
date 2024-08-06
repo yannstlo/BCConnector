@@ -11,7 +11,11 @@ class APIClient {
     static let shared = APIClient()
     private init() {}
     
-    private let baseURL = "https://api.businesscentral.dynamics.com/v2.0/YOUR_TENANT_ID/YOUR_ENVIRONMENT"
+    @ObservedObject private var settings = SettingsManager()
+    
+    private var baseURL: String {
+        "https://api.businesscentral.dynamics.com/v2.0/\(settings.tenantId)/\(settings.environment)"
+    }
     private let apiVersion = "v2.0"
     
     func fetch<T: Decodable>(_ endpoint: String) async throws -> T {

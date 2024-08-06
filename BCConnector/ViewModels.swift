@@ -4,9 +4,11 @@ import Foundation
 class CustomersViewModel: ObservableObject {
     @Published var customers: [Customer] = []
     
+    @ObservedObject private var settings = SettingsManager()
+    
     func fetchCustomers() async {
         do {
-            let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("companies(YOUR_COMPANY_ID)/customers")
+            let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("companies(\(settings.companyId))/customers")
             customers = response.value
         } catch {
             print("Error fetching customers: \(error)")
@@ -17,10 +19,11 @@ class CustomersViewModel: ObservableObject {
 @MainActor
 class VendorsViewModel: ObservableObject {
     @Published var vendors: [Vendor] = []
+    @ObservedObject private var settings = SettingsManager()
     
     func fetchVendors() async {
         do {
-            let response: BusinessCentralResponse<Vendor> = try await APIClient.shared.fetch("companies(YOUR_COMPANY_ID)/vendors")
+            let response: BusinessCentralResponse<Vendor> = try await APIClient.shared.fetch("companies(\(settings.companyId))/vendors")
             vendors = response.value
         } catch {
             print("Error fetching vendors: \(error)")
@@ -31,10 +34,11 @@ class VendorsViewModel: ObservableObject {
 @MainActor
 class OrdersViewModel: ObservableObject {
     @Published var orders: [Order] = []
+    @ObservedObject private var settings = SettingsManager()
     
     func fetchOrders() async {
         do {
-            let response: BusinessCentralResponse<Order> = try await APIClient.shared.fetch("companies(YOUR_COMPANY_ID)/salesOrders")
+            let response: BusinessCentralResponse<Order> = try await APIClient.shared.fetch("companies(\(settings.companyId))/salesOrders")
             orders = response.value
         } catch {
             print("Error fetching orders: \(error)")

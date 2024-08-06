@@ -6,9 +6,9 @@ enum APIError: Error {
     case invalidURL
     case noData
     case decodingError(String)
-    case authenticationError
+    case authenticationError(ErrorResponse?)
     case networkError(String)
-    case httpError(Int)
+    case httpError(Int, ErrorResponse?)
     case tokenResponseError(String)
 }
 
@@ -43,6 +43,11 @@ class APIClient: ObservableObject {
             throw APIError.networkError("Invalid response")
         }
         
+        print("Response status code: \(httpResponse.statusCode)")
+        if let responseBody = String(data: data, encoding: .utf8) {
+            print("Response body: \(responseBody)")
+        }
+        
         switch httpResponse.statusCode {
         case 200...299:
             do {
@@ -53,30 +58,32 @@ class APIClient: ObservableObject {
                 throw APIError.decodingError(error.localizedDescription)
             }
         case 400:
-            if let errorData = String(data: data, encoding: .utf8) {
-                print("HTTP 400 Error. Response body: \(errorData)")
-            }
-            throw APIError.httpError(400)
+            throw APIError.httpError(400, try? decodeErrorResponse(from: data))
         case 401:
             print("Authentication error: The access token might be invalid or expired.")
-            throw APIError.authenticationError
+            throw APIError.authenticationError(try? decodeErrorResponse(from: data))
         case 403:
             print("Authorization error: The user might not have permission to access this resource.")
-            if let errorData = String(data: data, encoding: .utf8) {
-                print("HTTP 403 Error. Response body: \(errorData)")
-            }
-            throw APIError.httpError(403)
+            throw APIError.httpError(403, try? decodeErrorResponse(from: data))
         case 404:
             print("Not Found error: The requested resource might not exist.")
-            if let errorData = String(data: data, encoding: .utf8) {
-                print("HTTP 404 Error. Response body: \(errorData)")
-            }
-            throw APIError.httpError(404)
+            throw APIError.httpError(404, try? decodeErrorResponse(from: data))
         default:
-            if let errorData = String(data: data, encoding: .utf8) {
-                print("HTTP \(httpResponse.statusCode) Error. Response body: \(errorData)")
-            }
-            throw APIError.httpError(httpResponse.statusCode)
+            throw APIError.httpError(httpResponse.statusCode, try? decodeErrorResponse(from: data))
         }
     }
+    
+    private func decodeErrorResponse(from data: Data) throws -> ErrorResponse {
+        let decoder = JSONDecoder()
+        return try decoder.decode(ErrorResponse.self, from: data)
+    }
+}
+
+struct ErrorResponse: Codable {
+    let error: ErrorDetails
+}
+
+struct ErrorDetails: Codable {
+    let code: String
+    let message: String
 }

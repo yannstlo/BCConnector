@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum APIError: Error {
     case invalidURL
@@ -7,13 +8,11 @@ enum APIError: Error {
     case authenticationError
 }
 
-class APIClient {
+class APIClient: ObservableObject {
     static let shared = APIClient()
     private init() {}
     
-    private var settings: SettingsManager {
-        SettingsManager.shared
-    }
+    @ObservedObject private var settings = SettingsManager.shared
     
     private var baseURL: String {
         "https://api.businesscentral.dynamics.com/v2.0/\(settings.tenantId)/\(settings.environment)"

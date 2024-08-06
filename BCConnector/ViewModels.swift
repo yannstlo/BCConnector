@@ -20,7 +20,8 @@ class CustomersViewModel: ObservableObject {
 @MainActor
 class VendorsViewModel: ObservableObject {
     @Published var vendors: [Vendor] = []
-    private var settings = SettingsManager.shared
+    
+    @ObservedObject private var settings = SettingsManager.shared
     
     func fetchVendors() async {
         do {
@@ -35,7 +36,8 @@ class VendorsViewModel: ObservableObject {
 @MainActor
 class OrdersViewModel: ObservableObject {
     @Published var orders: [Order] = []
-    private var settings = SettingsManager.shared
+    
+    @ObservedObject private var settings = SettingsManager.shared
     
     func fetchOrders() async {
         do {

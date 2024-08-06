@@ -35,6 +35,7 @@ struct ContentView: View {
                 Text("Welcome to BCConnector")
                 Button("Log In") {
                     if let url = authManager.startAuthentication() {
+                        print("Authentication URL: \(url)")
                         authURL = url
                         isShowingWebView = true
                     }

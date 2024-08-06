@@ -4,7 +4,7 @@ import Foundation
 
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
-    @ObservedObject private var settingsManager = SettingsManager.shared
+    @EnvironmentObject private var settingsManager: SettingsManager
     @State private var isShowingWebView = false
     @State private var authURL: URL?
     @State private var isShowingSettings = false

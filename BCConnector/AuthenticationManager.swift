@@ -40,10 +40,15 @@ class AuthenticationManager: ObservableObject {
     }
     
     func startAuthentication() -> URL? {
-        let updatedScope = "\(apiEndpoint)/.default"
-        guard let encodedRedirectUri = redirectUri.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed),
-              let encodedScope = updatedScope.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed),
-              let authURL = URL(string: "\(authorizationEndpoint)?client_id=\(settings.clientId)&redirect_uri=\(encodedRedirectUri)&response_type=code&scope=\(encodedScope)") else {
+        var components = URLComponents(string: authorizationEndpoint)
+        components?.queryItems = [
+            URLQueryItem(name: "client_id", value: settings.clientId),
+            URLQueryItem(name: "redirect_uri", value: redirectUri),
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "scope", value: scope)
+        ]
+        
+        guard let authURL = components?.url else {
             print("Invalid authorization URL")
             return nil
         }

@@ -2,8 +2,15 @@ import SwiftUI
 
 @main
 struct BCConnectorApp: App {
-    @StateObject private var authManager = AuthenticationManager.shared
-    @StateObject private var settingsManager = SettingsManager.shared
+    @StateObject private var authManager: AuthenticationManager
+    @StateObject private var settingsManager: SettingsManager
+    
+    init() {
+        let settings = SettingsManager.shared
+        self._settingsManager = StateObject(wrappedValue: settings)
+        let auth = AuthenticationManager.shared
+        self._authManager = StateObject(wrappedValue: auth)
+    }
     
     var body: some Scene {
         WindowGroup {

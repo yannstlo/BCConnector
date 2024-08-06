@@ -36,17 +36,23 @@ class APIClient: ObservableObject {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.authenticationError
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.networkError("Invalid response")
         }
         
-        do {
-            let decoder = JSONDecoder()
-            return try decoder.decode(T.self, from: data)
-        } catch {
-            print("Decoding error: \(error)")
-            throw APIError.decodingError(error.localizedDescription)
+        switch httpResponse.statusCode {
+        case 200...299:
+            do {
+                let decoder = JSONDecoder()
+                return try decoder.decode(T.self, from: data)
+            } catch {
+                print("Decoding error: \(error)")
+                throw APIError.decodingError(error.localizedDescription)
+            }
+        case 401:
+            throw APIError.authenticationError
+        default:
+            throw APIError.httpError(httpResponse.statusCode)
         }
     }
 }

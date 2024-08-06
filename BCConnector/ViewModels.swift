@@ -11,8 +11,23 @@ class CustomersViewModel: ObservableObject {
         do {
             let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("companies(\(settings.companyId))/customers")
             customers = response.value
+        } catch let error as APIError {
+            switch error {
+            case .authenticationError:
+                print("Authentication error: Please check your credentials and try logging in again.")
+            case .invalidURL:
+                print("Invalid URL: Please check your Business Central settings.")
+            case .networkError(let message):
+                print("Network error: \(message)")
+            case .httpError(let statusCode):
+                print("HTTP error: Status code \(statusCode)")
+            case .decodingError(let message):
+                print("Decoding error: \(message)")
+            default:
+                print("Unknown error: \(error.localizedDescription)")
+            }
         } catch {
-            print("Error fetching customers: \(error)")
+            print("Unexpected error: \(error.localizedDescription)")
         }
     }
 }

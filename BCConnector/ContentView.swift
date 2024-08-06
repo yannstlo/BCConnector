@@ -161,8 +161,16 @@ struct CustomersView: View {
                 VStack(alignment: .leading) {
                     Text(customer.displayName)
                         .font(.headline)
-                    Text(customer.email)
+                    Text("Number: \(customer.number)")
                         .font(.subheadline)
+                    if let phoneNumber = customer.phoneNumber {
+                        Text("Phone: \(phoneNumber)")
+                            .font(.subheadline)
+                    }
+                    if let email = customer.email {
+                        Text("Email: \(email)")
+                            .font(.subheadline)
+                    }
                 }
             }
             .navigationTitle("Customers")

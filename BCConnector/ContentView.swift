@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var isShowingSettings = false
     @State private var authContextProvider: AuthContextProvider?
     @State private var selectedTab = 0
+    @State private var authSession: ASWebAuthenticationSession?
     
     var body: some View {
         Group {
@@ -65,7 +66,7 @@ struct ContentView: View {
     
     private func startAuthSession(url: URL) {
         authContextProvider = AuthContextProvider()
-        let session = ASWebAuthenticationSession(
+        authSession = ASWebAuthenticationSession(
             url: url,
             callbackURLScheme: "ca.yann.bcconnector.auth"
         ) { callbackURL, error in
@@ -88,9 +89,9 @@ struct ContentView: View {
             }
         }
         
-        session.presentationContextProvider = authContextProvider
-        session.prefersEphemeralWebBrowserSession = true
-        session.start()
+        authSession?.presentationContextProvider = authContextProvider
+        authSession?.prefersEphemeralWebBrowserSession = true
+        authSession?.start()
     }
 }
 

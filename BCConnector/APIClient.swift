@@ -1,6 +1,5 @@
 import Foundation
 import SwiftUI
-import BCConnector
 
 enum APIError: Error {
     case invalidURL

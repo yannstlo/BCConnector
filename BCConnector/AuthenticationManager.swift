@@ -4,7 +4,7 @@ import SwiftUI
 class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
     
-    private var settings = SettingsManager.shared
+    @ObservedObject private var settings = SettingsManager.shared
     
     private let redirectUri = "ca.yann.bcconnector.auth://oauth2redirect"
     private let scope = "https://api.businesscentral.dynamics.com/.default"

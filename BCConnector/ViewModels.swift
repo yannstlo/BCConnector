@@ -17,6 +17,10 @@ class CustomersViewModel: ObservableObject {
     }
 }
 
+struct CustomerResponse: Codable {
+    let value: [Customer]
+}
+
 @MainActor
 class VendorsViewModel: ObservableObject {
     @Published var vendors: [Vendor] = []

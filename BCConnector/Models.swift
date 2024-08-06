@@ -3,7 +3,17 @@ import Foundation
 struct Customer: Identifiable, Codable {
     let id: String
     let displayName: String
-    let email: String
+    let number: String
+    let phoneNumber: String?
+    let email: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName
+        case number
+        case phoneNumber
+        case email
+    }
 }
 
 struct Vendor: Identifiable, Codable {

@@ -1,13 +1,10 @@
 import SwiftUI
 import AuthenticationServices
 import Foundation
-import WebKit
 
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @EnvironmentObject private var settingsManager: SettingsManager
-    @State private var isShowingWebView = false
-    @State private var authURL: URL?
     @State private var isShowingSettings = false
     
     var body: some View {
@@ -36,23 +33,52 @@ struct ContentView: View {
                 Text("Welcome to BCConnector")
                 Button("Log In") {
                     if let url = authManager.startAuthentication() {
-                        authURL = url
-                        isShowingWebView = true
+                        startAuthSession(url: url)
                     }
                 }
                 Button("Settings") {
                     isShowingSettings = true
                 }
             }
-            .sheet(isPresented: $isShowingWebView) {
-                if let url = authURL {
-                    AuthWebView(url: url)
-                }
-            }
             .sheet(isPresented: $isShowingSettings) {
                 SettingsView(settings: settingsManager)
             }
         }
+    }
+    
+    private func startAuthSession(url: URL) {
+        let session = ASWebAuthenticationSession(
+            url: url,
+            callbackURLScheme: "ca.yann.bcconnector.auth"
+        ) { callbackURL, error in
+            if let error = error {
+                print("Authentication error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let callbackURL = callbackURL else {
+                print("No callback URL received")
+                return
+            }
+            
+            Task {
+                do {
+                    try await authManager.handleRedirect(url: callbackURL)
+                } catch {
+                    print("Error handling redirect: \(error)")
+                }
+            }
+        }
+        
+        session.presentationContextProvider = AuthContextProvider()
+        session.prefersEphemeralWebBrowserSession = true
+        session.start()
+    }
+}
+
+class AuthContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        return ASPresentationAnchor()
     }
 }
 
@@ -70,58 +96,6 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
-    }
-}
-
-struct AuthWebView: UIViewControllerRepresentable {
-    let url: URL
-    @Environment(\.presentationMode) var presentationMode
-    
-    func makeUIViewController(context: Context) -> UIViewController {
-        let controller = UIViewController()
-        let webView = WKWebView(frame: controller.view.bounds)
-        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        controller.view.addSubview(webView)
-        
-        let request = URLRequest(url: url)
-        webView.load(request)
-        
-        webView.navigationDelegate = context.coordinator
-        
-        return controller
-    }
-    
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, WKNavigationDelegate {
-        var parent: AuthWebView
-        
-        init(_ parent: AuthWebView) {
-            self.parent = parent
-        }
-        
-        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            if let url = navigationAction.request.url,
-               url.scheme == "ca.yann.bcconnector.auth" {
-                decisionHandler(.cancel)
-                Task {
-                    do {
-                        try await AuthenticationManager.shared.handleRedirect(url: url)
-                    } catch {
-                        print("Error handling redirect: \(error)")
-                    }
-                }
-                DispatchQueue.main.async {
-                    self.parent.presentationMode.wrappedValue.dismiss()
-                }
-            } else {
-                decisionHandler(.allow)
-            }
-        }
     }
 }
 

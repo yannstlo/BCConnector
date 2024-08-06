@@ -75,6 +75,15 @@ class AuthenticationManager: ObservableObject {
             self.isAuthenticated = true
         }
     }
+
+    func logout() {
+        self.accessToken = nil
+        self.refreshToken = nil
+        self.expirationDate = nil
+        DispatchQueue.main.async {
+            self.isAuthenticated = false
+        }
+    }
     
     private func performInitialAuthentication() async throws -> String {
         // In a real app, you'd initiate the OAuth flow here,

@@ -1,0 +1,41 @@
+import Foundation
+
+enum APIError: Error {
+    case invalidURL
+    case noData
+    case decodingError
+    case authenticationError
+}
+
+class APIClient {
+    static let shared = APIClient()
+    private init() {}
+    
+    private let baseURL = "YOUR_BUSINESS_CENTRAL_API_BASE_URL"
+    private let apiVersion = "v2.0"
+    
+    func fetch<T: Decodable>(_ endpoint: String) async throws -> T {
+        guard let url = URL(string: "\(baseURL)/\(apiVersion)/\(endpoint)") else {
+            throw APIError.invalidURL
+        }
+        
+        let accessToken = try await AuthenticationManager.shared.getAccessToken()
+        
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.authenticationError
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw APIError.decodingError
+        }
+    }
+}

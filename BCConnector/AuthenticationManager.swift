@@ -21,13 +21,34 @@ class AuthenticationManager: ObservableObject {
         "https://api.businesscentral.dynamics.com/v2.0/\(settings.environment)/api/v2.0"
     }
     
-    private init() {}
+    private init() {
+        loadTokens()
+    }
     
     @Published private(set) var isAuthenticated = false
     
-    private var accessToken: String?
-    private var refreshToken: String?
-    private var expirationDate: Date?
+    private var accessToken: String? {
+        didSet {
+            UserDefaults.standard.set(accessToken, forKey: "accessToken")
+        }
+    }
+    private var refreshToken: String? {
+        didSet {
+            UserDefaults.standard.set(refreshToken, forKey: "refreshToken")
+        }
+    }
+    private var expirationDate: Date? {
+        didSet {
+            UserDefaults.standard.set(expirationDate, forKey: "expirationDate")
+        }
+    }
+    
+    private func loadTokens() {
+        accessToken = UserDefaults.standard.string(forKey: "accessToken")
+        refreshToken = UserDefaults.standard.string(forKey: "refreshToken")
+        expirationDate = UserDefaults.standard.object(forKey: "expirationDate") as? Date
+        isAuthenticated = accessToken != nil
+    }
     
     func getAccessToken() async throws -> String {
         if let token = accessToken, let expirationDate = expirationDate, expirationDate > Date() {
@@ -35,7 +56,12 @@ class AuthenticationManager: ObservableObject {
         }
         
         if let refreshToken = refreshToken {
-            return try await refreshAccessToken(refreshToken: refreshToken)
+            do {
+                return try await refreshAccessToken(refreshToken: refreshToken)
+            } catch {
+                // If refresh fails, fall back to initial authentication
+                print("Token refresh failed: \(error)")
+            }
         }
         
         return try await performInitialAuthentication()
@@ -88,6 +114,9 @@ class AuthenticationManager: ObservableObject {
         self.accessToken = nil
         self.refreshToken = nil
         self.expirationDate = nil
+        UserDefaults.standard.removeObject(forKey: "accessToken")
+        UserDefaults.standard.removeObject(forKey: "refreshToken")
+        UserDefaults.standard.removeObject(forKey: "expirationDate")
         DispatchQueue.main.async {
             self.isAuthenticated = false
         }

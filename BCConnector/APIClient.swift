@@ -11,7 +11,7 @@ class APIClient {
     static let shared = APIClient()
     private init() {}
     
-    @ObservedObject private var settings = SettingsManager()
+    private var settings = SettingsManager.shared
     
     private var baseURL: String {
         "https://api.businesscentral.dynamics.com/v2.0/\(settings.tenantId)/\(settings.environment)"

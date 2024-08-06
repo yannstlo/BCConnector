@@ -1,6 +1,9 @@
 import Foundation
 
 class SettingsManager: ObservableObject {
+    static let shared = SettingsManager()
+    
+    private init() {}
     @Published var clientId: String {
         didSet { UserDefaults.standard.set(clientId, forKey: "clientId") }
     }

@@ -4,7 +4,7 @@ import Foundation
 class CustomersViewModel: ObservableObject {
     @Published var customers: [Customer] = []
     
-    @ObservedObject private var settings = SettingsManager()
+    private var settings = SettingsManager.shared
     
     func fetchCustomers() async {
         do {
@@ -19,7 +19,7 @@ class CustomersViewModel: ObservableObject {
 @MainActor
 class VendorsViewModel: ObservableObject {
     @Published var vendors: [Vendor] = []
-    @ObservedObject private var settings = SettingsManager()
+    private var settings = SettingsManager.shared
     
     func fetchVendors() async {
         do {
@@ -34,7 +34,7 @@ class VendorsViewModel: ObservableObject {
 @MainActor
 class OrdersViewModel: ObservableObject {
     @Published var orders: [Order] = []
-    @ObservedObject private var settings = SettingsManager()
+    private var settings = SettingsManager.shared
     
     func fetchOrders() async {
         do {

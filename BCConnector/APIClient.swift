@@ -5,7 +5,7 @@ import Combine
 enum APIError: Error {
     case invalidURL
     case noData
-    case decodingError(Error)
+    case decodingError
     case authenticationError
     case networkError(String)
     case httpError(Int)

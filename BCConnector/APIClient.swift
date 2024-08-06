@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+@_exported import BCConnector
+
 enum APIError: Error {
     case invalidURL
     case noData

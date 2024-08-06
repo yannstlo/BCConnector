@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+@_exported import BCConnector
+
 class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
     

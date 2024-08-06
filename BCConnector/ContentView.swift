@@ -2,6 +2,8 @@ import SwiftUI
 import AuthenticationServices
 import Foundation
 
+@_exported import BCConnector
+
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @ObservedObject private var settingsManager = SettingsManager.shared

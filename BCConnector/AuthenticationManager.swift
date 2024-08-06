@@ -37,7 +37,7 @@ class AuthenticationManager: ObservableObject {
     }
     
     func startAuthentication() -> URL? {
-            guard let authURL = URL(string: "\(authorizationEndpoint)?client_id=\(clientId)&redirect_uri=\(redirectUri)&response_type=code&scope=\(scope)") else {
+            guard let authURL = URL(string: "\(authorizationEndpoint)?client_id=\(settings.clientId)&redirect_uri=\(redirectUri)&response_type=code&scope=\(scope)") else {
                 print("Invalid authorization URL")
                 return nil
             }
@@ -77,8 +77,8 @@ class AuthenticationManager: ObservableObject {
             URLQueryItem(name: "grant_type", value: "authorization_code"),
             URLQueryItem(name: "code", value: code),
             URLQueryItem(name: "redirect_uri", value: redirectUri),
-            URLQueryItem(name: "client_id", value: clientId),
-            URLQueryItem(name: "client_secret", value: clientSecret)
+            URLQueryItem(name: "client_id", value: settings.clientId),
+            URLQueryItem(name: "client_secret", value: settings.clientSecret)
         ]
         
         var request = URLRequest(url: components.url!)
@@ -100,8 +100,8 @@ class AuthenticationManager: ObservableObject {
         components.queryItems = [
             URLQueryItem(name: "grant_type", value: "refresh_token"),
             URLQueryItem(name: "refresh_token", value: refreshToken),
-            URLQueryItem(name: "client_id", value: clientId),
-            URLQueryItem(name: "client_secret", value: clientSecret)
+            URLQueryItem(name: "client_id", value: settings.clientId),
+            URLQueryItem(name: "client_secret", value: settings.clientSecret)
         ]
         
         var request = URLRequest(url: components.url!)

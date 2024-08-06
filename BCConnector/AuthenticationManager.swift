@@ -15,6 +15,9 @@ class AuthenticationManager: ObservableObject {
     private var tokenEndpoint: String {
         "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/token"
     }
+    private var apiEndpoint: String {
+        "https://api.businesscentral.dynamics.com/v2.0/\(settings.environment)/api/v2.0"
+    }
     
     private init() {}
     
@@ -37,13 +40,16 @@ class AuthenticationManager: ObservableObject {
     }
     
     func startAuthentication() -> URL? {
-            guard let authURL = URL(string: "\(authorizationEndpoint)?client_id=\(settings.clientId)&redirect_uri=\(redirectUri)&response_type=code&scope=\(scope)") else {
-                print("Invalid authorization URL")
-                return nil
-            }
-            
-            return authURL
+        let updatedScope = "\(apiEndpoint)/.default"
+        guard let encodedRedirectUri = redirectUri.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed),
+              let encodedScope = updatedScope.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed),
+              let authURL = URL(string: "\(authorizationEndpoint)?client_id=\(settings.clientId)&redirect_uri=\(encodedRedirectUri)&response_type=code&scope=\(encodedScope)") else {
+            print("Invalid authorization URL")
+            return nil
         }
+        
+        return authURL
+    }
 
     func handleRedirect(url: URL) async throws {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),

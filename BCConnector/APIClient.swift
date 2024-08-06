@@ -58,7 +58,20 @@ class APIClient: ObservableObject {
             }
             throw APIError.httpError(400)
         case 401:
+            print("Authentication error: The access token might be invalid or expired.")
             throw APIError.authenticationError
+        case 403:
+            print("Authorization error: The user might not have permission to access this resource.")
+            if let errorData = String(data: data, encoding: .utf8) {
+                print("HTTP 403 Error. Response body: \(errorData)")
+            }
+            throw APIError.httpError(403)
+        case 404:
+            print("Not Found error: The requested resource might not exist.")
+            if let errorData = String(data: data, encoding: .utf8) {
+                print("HTTP 404 Error. Response body: \(errorData)")
+            }
+            throw APIError.httpError(404)
         default:
             if let errorData = String(data: data, encoding: .utf8) {
                 print("HTTP \(httpResponse.statusCode) Error. Response body: \(errorData)")

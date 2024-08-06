@@ -1,6 +1,7 @@
 import SwiftUI
 import AuthenticationServices
 import Foundation
+import WebKit
 
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared

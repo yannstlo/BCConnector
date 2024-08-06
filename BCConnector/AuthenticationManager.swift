@@ -136,18 +136,21 @@ class AuthenticationManager: ObservableObject {
     
     private func exchangeCodeForTokens(code: String) async throws -> String {
         // Construct the token request
-        var components = URLComponents(string: tokenEndpoint)!
-        components.queryItems = [
-            URLQueryItem(name: "grant_type", value: "authorization_code"),
-            URLQueryItem(name: "code", value: code),
-            URLQueryItem(name: "redirect_uri", value: redirectUri),
-            URLQueryItem(name: "client_id", value: settings.clientId),
-            URLQueryItem(name: "client_secret", value: settings.clientSecret)
+        let parameters = [
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirectUri,
+            "client_id": settings.clientId,
+            "client_secret": settings.clientSecret
         ]
         
-        var request = URLRequest(url: components.url!)
+        let bodyString = parameters.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
+        let bodyData = bodyString.data(using: .utf8)
+        
+        var request = URLRequest(url: URL(string: tokenEndpoint)!)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = bodyData
         
         print("Token request URL: \(request.url?.absoluteString ?? "nil")")
         print("Token request headers: \(request.allHTTPHeaderFields ?? [:])")

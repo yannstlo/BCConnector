@@ -140,8 +140,7 @@ class AuthenticationManager: ObservableObject {
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": redirectUri,
-            "client_id": settings.clientId,
-            "client_secret": settings.clientSecret
+            "client_id": settings.clientId
         ]
         
         let bodyString = parameters.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
@@ -190,8 +189,7 @@ class AuthenticationManager: ObservableObject {
         components.queryItems = [
             URLQueryItem(name: "grant_type", value: "refresh_token"),
             URLQueryItem(name: "refresh_token", value: refreshToken),
-            URLQueryItem(name: "client_id", value: settings.clientId),
-            URLQueryItem(name: "client_secret", value: settings.clientSecret)
+            URLQueryItem(name: "client_id", value: settings.clientId)
         ]
         
         var request = URLRequest(url: components.url!)

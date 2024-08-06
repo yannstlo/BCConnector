@@ -9,8 +9,15 @@ class AuthenticationManager : ObservableObject {
     private let clientSecret = "YOUR_ACTUAL_CLIENT_SECRET"
     private let redirectUri = "ca.yann.bcconnector.auth://oauth2redirect"
     private let scope = "https://api.businesscentral.dynamics.com/.default"
-    private let authorizationEndpoint = "https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize"
-    private let tokenEndpoint = "https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token"
+    private let tenantId = "YOUR_ACTUAL_TENANT_ID"
+    private let authorizationEndpoint: String
+    private let tokenEndpoint: String
+    
+    private override init() {
+        self.authorizationEndpoint = "https://login.microsoftonline.com/\(tenantId)/oauth2/v2.0/authorize"
+        self.tokenEndpoint = "https://login.microsoftonline.com/\(tenantId)/oauth2/v2.0/token"
+        super.init()
+    }
     
     @Published private(set) var isAuthenticated = false
     

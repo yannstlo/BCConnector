@@ -53,6 +53,7 @@ class AuthenticationManager: ObservableObject {
             return nil
         }
         
+        print("Authentication URL: \(authURL)")
         return authURL
     }
 

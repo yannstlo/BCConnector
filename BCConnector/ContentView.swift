@@ -35,7 +35,6 @@ struct ContentView: View {
                 Text("Welcome to BCConnector")
                 Button("Log In") {
                     if let url = authManager.startAuthentication() {
-                        print("Authentication URL: \(url)")
                         authURL = url
                         isShowingWebView = true
                     }
@@ -77,13 +76,14 @@ struct AuthWebView: UIViewControllerRepresentable {
     let url: URL
     @Environment(\.presentationMode) var presentationMode
     
-    func makeUIViewController(context: Context) -> UIViewController {
-        let controller = UIViewController()
+    func makeUIViewController(context: Context) -> ASWebAuthenticationSession {
         let authSession = ASWebAuthenticationSession(
             url: url,
             callbackURLScheme: "ca.yann.bcconnector.auth",
             completionHandler: { callbackURL, error in
-                if let callbackURL = callbackURL {
+                if let error = error {
+                    print("Authentication error: \(error.localizedDescription)")
+                } else if let callbackURL = callbackURL {
                     Task {
                         do {
                             try await AuthenticationManager.shared.handleRedirect(url: callbackURL)
@@ -102,7 +102,7 @@ struct AuthWebView: UIViewControllerRepresentable {
         authSession.prefersEphemeralWebBrowserSession = true
         authSession.start()
         
-        return controller
+        return authSession
     }
     
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}

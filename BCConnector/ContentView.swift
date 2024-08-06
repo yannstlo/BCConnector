@@ -44,8 +44,10 @@ struct ContentView: View {
 
 struct AuthWebView: UIViewControllerRepresentable {
     let url: URL
+    @Environment(\.presentationMode) var presentationMode
     
-    func makeUIViewController(context: Context) -> ASWebAuthenticationSession.ViewController {
+    func makeUIViewController(context: Context) -> UIViewController {
+        let controller = UIViewController()
         let authSession = ASWebAuthenticationSession(
             url: url,
             callbackURLScheme: "ca.yann.bcconnector.auth",
@@ -59,18 +61,36 @@ struct AuthWebView: UIViewControllerRepresentable {
                         }
                     }
                 }
+                DispatchQueue.main.async {
+                    self.presentationMode.wrappedValue.dismiss()
+                }
             }
         )
         
-        let controller = ASWebAuthenticationSession.ViewController()
-        authSession.presentationContextProvider = controller
+        authSession.presentationContextProvider = context.coordinator
         authSession.prefersEphemeralWebBrowserSession = true
         authSession.start()
         
         return controller
     }
     
-    func updateUIViewController(_ uiViewController: ASWebAuthenticationSession.ViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, ASWebAuthenticationPresentationContextProviding {
+        var parent: AuthWebView
+        
+        init(_ parent: AuthWebView) {
+            self.parent = parent
+        }
+        
+        func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+            UIApplication.shared.windows.first!
+        }
+    }
 }
 
 struct CustomersView: View {

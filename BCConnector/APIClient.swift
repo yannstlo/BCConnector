@@ -46,7 +46,7 @@ class APIClient: ObservableObject {
             return try decoder.decode(T.self, from: data)
         } catch {
             print("Decoding error: \(error)")
-            throw APIError.decodingError(error)
+            throw APIError.decodingError(error.localizedDescription)
         }
     }
 }

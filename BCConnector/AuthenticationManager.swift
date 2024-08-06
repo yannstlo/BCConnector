@@ -178,7 +178,7 @@ class AuthenticationManager: ObservableObject {
             return tokenResponse.accessToken
         } catch {
             print("Error decoding token response: \(error)")
-            throw APIError.decodingError(error)
+            throw APIError.decodingError(error.localizedDescription)
         }
     }
     

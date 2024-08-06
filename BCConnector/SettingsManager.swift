@@ -18,6 +18,9 @@ class SettingsManager: ObservableObject {
     @Published var environment: String {
         didSet { UserDefaults.standard.set(environment, forKey: "environment") }
     }
+    @Published var redirectUri: String {
+        didSet { UserDefaults.standard.set(redirectUri, forKey: "redirectUri") }
+    }
     
     private init() {
         self.clientId = UserDefaults.standard.string(forKey: "clientId") ?? ""
@@ -25,5 +28,6 @@ class SettingsManager: ObservableObject {
         self.tenantId = UserDefaults.standard.string(forKey: "tenantId") ?? ""
         self.companyId = UserDefaults.standard.string(forKey: "companyId") ?? ""
         self.environment = UserDefaults.standard.string(forKey: "environment") ?? ""
+        self.redirectUri = UserDefaults.standard.string(forKey: "redirectUri") ?? "ca.yann.bcconnector.auth://auth"
     }
 }

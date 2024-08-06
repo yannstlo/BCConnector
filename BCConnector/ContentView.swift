@@ -91,6 +91,7 @@ struct SettingsView: View {
     @State private var tempTenantId: String = ""
     @State private var tempCompanyId: String = ""
     @State private var tempEnvironment: String = ""
+    @State private var tempRedirectUri: String = ""
     
     var body: some View {
         Form {
@@ -100,6 +101,7 @@ struct SettingsView: View {
                 TextField("Tenant ID", text: $tempTenantId)
                 TextField("Company ID", text: $tempCompanyId)
                 TextField("Environment", text: $tempEnvironment)
+                TextField("Redirect URI", text: $tempRedirectUri)
             }
             
             Section {
@@ -109,6 +111,7 @@ struct SettingsView: View {
                     settings.tenantId = tempTenantId
                     settings.companyId = tempCompanyId
                     settings.environment = tempEnvironment
+                    settings.redirectUri = tempRedirectUri
                 }
             }
             
@@ -117,6 +120,7 @@ struct SettingsView: View {
                 Text("Tenant ID: \(settings.tenantId)")
                 Text("Company ID: \(settings.companyId)")
                 Text("Environment: \(settings.environment)")
+                Text("Redirect URI: \(settings.redirectUri)")
             }
         }
         .navigationTitle("Settings")
@@ -126,6 +130,7 @@ struct SettingsView: View {
             tempTenantId = settings.tenantId
             tempCompanyId = settings.companyId
             tempEnvironment = settings.environment
+            tempRedirectUri = settings.redirectUri
         }
     }
 }

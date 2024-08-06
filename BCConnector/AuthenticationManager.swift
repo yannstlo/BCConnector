@@ -6,7 +6,9 @@ class AuthenticationManager: ObservableObject {
     
     @ObservedObject private var settings = SettingsManager.shared
     
-    private let redirectUri = "ca.yann.bcconnector.auth://auth"
+    private var redirectUri: String {
+        settings.redirectUri
+    }
     private let scope = "https://api.businesscentral.dynamics.com/.default"
     
     private var authorizationEndpoint: String {

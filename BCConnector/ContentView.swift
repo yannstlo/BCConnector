@@ -78,30 +78,14 @@ struct AuthWebView: UIViewControllerRepresentable {
     
     func makeUIViewController(context: Context) -> UIViewController {
         let controller = UIViewController()
-        let authSession = ASWebAuthenticationSession(
-            url: url,
-            callbackURLScheme: "ca.yann.bcconnector.auth",
-            completionHandler: { callbackURL, error in
-                if let error = error {
-                    print("Authentication error: \(error.localizedDescription)")
-                } else if let callbackURL = callbackURL {
-                    Task {
-                        do {
-                            try await AuthenticationManager.shared.handleRedirect(url: callbackURL)
-                        } catch {
-                            print("Error handling redirect: \(error)")
-                        }
-                    }
-                }
-                DispatchQueue.main.async {
-                    self.presentationMode.wrappedValue.dismiss()
-                }
-            }
-        )
+        let webView = WKWebView(frame: controller.view.bounds)
+        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        controller.view.addSubview(webView)
         
-        authSession.presentationContextProvider = context.coordinator
-        authSession.prefersEphemeralWebBrowserSession = true
-        authSession.start()
+        let request = URLRequest(url: url)
+        webView.load(request)
+        
+        webView.navigationDelegate = context.coordinator
         
         return controller
     }
@@ -112,23 +96,29 @@ struct AuthWebView: UIViewControllerRepresentable {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, ASWebAuthenticationPresentationContextProviding {
+    class Coordinator: NSObject, WKNavigationDelegate {
         var parent: AuthWebView
         
         init(_ parent: AuthWebView) {
             self.parent = parent
         }
         
-        func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-            if #available(iOS 15.0, *) {
-                return UIApplication.shared.connectedScenes
-                    .filter { $0.activationState == .foregroundActive }
-                    .compactMap { $0 as? UIWindowScene }
-                    .first?
-                    .windows
-                    .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            if let url = navigationAction.request.url,
+               url.scheme == "ca.yann.bcconnector.auth" {
+                decisionHandler(.cancel)
+                Task {
+                    do {
+                        try await AuthenticationManager.shared.handleRedirect(url: url)
+                    } catch {
+                        print("Error handling redirect: \(error)")
+                    }
+                }
+                DispatchQueue.main.async {
+                    self.parent.presentationMode.wrappedValue.dismiss()
+                }
             } else {
-                return UIApplication.shared.windows.first ?? ASPresentationAnchor()
+                decisionHandler(.allow)
             }
         }
     }

@@ -57,6 +57,12 @@ class AuthenticationManager: ObservableObject {
         return authURL
     }
 
+    // Helper function to percent-encode the client ID
+    private func percentEncodedClientId() -> String {
+        let allowedCharacters = CharacterSet(charactersIn: "!*'();:@&=+$,/?%#[]").inverted
+        return settings.clientId.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? settings.clientId
+    }
+
     func handleRedirect(url: URL) async throws {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let code = components.queryItems?.first(where: { $0.name == "code" })?.value

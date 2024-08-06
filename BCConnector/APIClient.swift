@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 
 enum APIError: Error {
     case invalidURL
@@ -13,6 +14,7 @@ class APIClient: ObservableObject {
     private init() {}
     
     private let settings = SettingsManager.shared
+    private let authManager = AuthenticationManager.shared
     
     private var baseURL: String {
         "https://api.businesscentral.dynamics.com/v2.0/\(settings.tenantId)/\(settings.environment)"

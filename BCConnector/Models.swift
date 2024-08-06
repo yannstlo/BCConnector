@@ -18,3 +18,12 @@ struct Order: Identifiable, Codable {
     let orderDate: Date
     let totalAmount: Decimal
 }
+struct BusinessCentralResponse<T: Codable>: Codable {
+    let odataContext: String
+    let value: [T]
+    
+    enum CodingKeys: String, CodingKey {
+        case odataContext = "@odata.context"
+        case value
+    }
+}

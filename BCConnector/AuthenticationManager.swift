@@ -5,12 +5,12 @@ class AuthenticationManager : ObservableObject {
     static let shared = AuthenticationManager()
     private init() {}
     
-    private let clientId = "YOUR_CLIENT_ID"
-    private let clientSecret = "YOUR_CLIENT_SECRET"
+    private let clientId = "YOUR_ACTUAL_CLIENT_ID"
+    private let clientSecret = "YOUR_ACTUAL_CLIENT_SECRET"
     private let redirectUri = "ca.yann.bcconnector.auth://oauth2redirect"
-    private let scope = "YOUR_REQUIRED_SCOPES"
-    private let authorizationEndpoint = "YOUR_AUTHORIZATION_ENDPOINT"
-    private let tokenEndpoint = "YOUR_TOKEN_ENDPOINT"
+    private let scope = "https://api.businesscentral.dynamics.com/.default"
+    private let authorizationEndpoint = "https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize"
+    private let tokenEndpoint = "https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token"
     
     @Published private(set) var isAuthenticated = false
     

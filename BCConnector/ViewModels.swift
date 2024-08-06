@@ -6,7 +6,8 @@ class CustomersViewModel: ObservableObject {
     
     func fetchCustomers() async {
         do {
-            customers = try await APIClient.shared.fetch("customers")
+            let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("companies(YOUR_COMPANY_ID)/customers")
+            customers = response.value
         } catch {
             print("Error fetching customers: \(error)")
         }
@@ -19,7 +20,8 @@ class VendorsViewModel: ObservableObject {
     
     func fetchVendors() async {
         do {
-            vendors = try await APIClient.shared.fetch("vendors")
+            let response: BusinessCentralResponse<Vendor> = try await APIClient.shared.fetch("companies(YOUR_COMPANY_ID)/vendors")
+            vendors = response.value
         } catch {
             print("Error fetching vendors: \(error)")
         }
@@ -32,7 +34,8 @@ class OrdersViewModel: ObservableObject {
     
     func fetchOrders() async {
         do {
-            orders = try await APIClient.shared.fetch("orders")
+            let response: BusinessCentralResponse<Order> = try await APIClient.shared.fetch("companies(YOUR_COMPANY_ID)/salesOrders")
+            orders = response.value
         } catch {
             print("Error fetching orders: \(error)")
         }

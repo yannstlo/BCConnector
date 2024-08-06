@@ -11,7 +11,7 @@ class APIClient {
     static let shared = APIClient()
     private init() {}
     
-    private let baseURL = "YOUR_BUSINESS_CENTRAL_API_BASE_URL"
+    private let baseURL = "https://api.businesscentral.dynamics.com/v2.0/YOUR_TENANT_ID/YOUR_ENVIRONMENT"
     private let apiVersion = "v2.0"
     
     func fetch<T: Decodable>(_ endpoint: String) async throws -> T {

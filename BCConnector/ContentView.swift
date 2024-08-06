@@ -7,27 +7,36 @@ struct ContentView: View {
     @EnvironmentObject private var settingsManager: SettingsManager
     @State private var isShowingSettings = false
     @State private var authContextProvider: AuthContextProvider?
+    @State private var selectedTab = 0
     
     var body: some View {
         if authManager.isAuthenticated {
             // Your main app content
-            TabView {
+            TabView(selection: $selectedTab) {
                 CustomersView()
                     .tabItem {
                         Label("Customers", systemImage: "person.3")
                     }
+                    .tag(0)
                 VendorsView()
                     .tabItem {
                         Label("Vendors", systemImage: "building.2")
                     }
+                    .tag(1)
                 OrdersView()
                     .tabItem {
                         Label("Orders", systemImage: "list.clipboard")
                     }
+                    .tag(2)
                 SettingsView(settings: settingsManager)
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
+                    .tag(3)
+            }
+            .onAppear {
+                // Set the initial tab to Customers when authenticated
+                selectedTab = 0
             }
         } else {
             VStack {

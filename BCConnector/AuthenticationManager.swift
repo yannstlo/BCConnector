@@ -167,7 +167,7 @@ class AuthenticationManager: ObservableObject {
         }
         
         guard httpResponse.statusCode == 200 else {
-            throw APIError.httpError(httpResponse.statusCode)
+            throw APIError.httpError(httpResponse.statusCode, nil)
         }
         
         do {

@@ -149,14 +149,37 @@ class AuthenticationManager: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        let (data, _) = try await URLSession.shared.data(for: request)
-        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        print("Token request URL: \(request.url?.absoluteString ?? "nil")")
+        print("Token request headers: \(request.allHTTPHeaderFields ?? [:])")
         
-        self.accessToken = tokenResponse.accessToken
-        self.refreshToken = tokenResponse.refreshToken
-        self.expirationDate = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+        let (data, response) = try await URLSession.shared.data(for: request)
         
-        return tokenResponse.accessToken
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.networkError("Invalid response")
+        }
+        
+        print("Token response status code: \(httpResponse.statusCode)")
+        
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("Token response body: \(responseString)")
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+        
+        do {
+            let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+            
+            self.accessToken = tokenResponse.accessToken
+            self.refreshToken = tokenResponse.refreshToken
+            self.expirationDate = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+            
+            return tokenResponse.accessToken
+        } catch {
+            print("Error decoding token response: \(error)")
+            throw APIError.decodingError(error)
+        }
     }
     
     private func refreshAccessToken(refreshToken: String) async throws -> String {

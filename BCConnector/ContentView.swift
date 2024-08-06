@@ -25,7 +25,7 @@ struct ContentView: View {
                     .tabItem {
                         Label("Orders", systemImage: "list.clipboard")
                     }
-                SettingsView()
+                SettingsView(settings: settingsManager)
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }

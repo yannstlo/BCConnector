@@ -2,10 +2,12 @@ import SwiftUI
 import AuthenticationServices
 import Foundation
 
-@StateObject private var settingsManager = SettingsManager()
+// Import SettingsManager
+import BCConnector
 
 struct ContentView: View {
     @StateObject private var authManager = AuthenticationManager.shared
+    @StateObject private var settingsManager = SettingsManager()
     @State private var isShowingWebView = false
     @State private var authURL: URL?
     @State private var isShowingSettings = false

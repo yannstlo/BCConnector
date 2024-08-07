@@ -315,9 +315,9 @@ struct VendorDetailView: View {
     var body: some View {
         Form {
             HStack {
-                InitialsIcon(name: vendor.displayName)
+                InitialsIcon(name: vendor.name)
                 VStack(alignment: .leading) {
-                    Text(vendor.displayName)
+                    Text(vendor.name)
                         .font(.headline)
                     Text(vendor.no)
                         .font(.caption)
@@ -326,23 +326,25 @@ struct VendorDetailView: View {
             }
             
             Section(header: Text("Contact Information")) {
-                if let email = vendor.email {
-                    Text("Email: \(email)")
-                }
-                if let phoneNumber = vendor.phoneNumber {
-                    Text("Phone: \(phoneNumber)")
-                }
+                Text("Phone: \(vendor.phoneNo)")
+                Text("Contact: \(vendor.contact)")
             }
             
             Section(header: Text("Address")) {
                 Text("Address: \(vendor.address)")
+                Text("Address 2: \(vendor.address2)")
                 Text("City: \(vendor.city)")
-                Text("State: \(vendor.county)")
+                Text("County: \(vendor.county)")
                 Text("Post Code: \(vendor.postCode)")
                 Text("Country: \(vendor.countryRegionCode)")
             }
+            
+            Section(header: Text("Financial Information")) {
+                Text("Balance: \(vendor.balance, format: .currency(code: "USD"))")
+                Text("Payment Terms: \(vendor.paymentTermsCode)")
+            }
         }
-        .navigationTitle(vendor.displayName)
+        .navigationTitle(vendor.name)
     }
 }
 

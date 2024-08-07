@@ -276,12 +276,29 @@ struct VendorsView: View {
     
     var body: some View {
         NavigationView {
-            List(viewModel.vendors) { vendor in
-                VStack(alignment: .leading) {
-                    Text(vendor.displayName)
-                        .font(.headline)
-                    Text(vendor.email)
-                        .font(.subheadline)
+            Group {
+                if !viewModel.vendors.isEmpty {
+                    List {
+                        ForEach(viewModel.vendors) { vendor in
+                            NavigationLink(destination: VendorDetailView(vendor: vendor)) {
+                                HStack {
+                                    InitialsIcon(name: vendor.displayName)
+                                    VStack(alignment: .leading) {
+                                        Text(vendor.displayName)
+                                            .font(.headline)
+                                        Text("Number: \(vendor.no)")
+                                            .font(.subheadline)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .padding()
+                } else {
+                    ProgressView("Loading vendors...")
                 }
             }
             .navigationTitle("Vendors")
@@ -289,6 +306,43 @@ struct VendorsView: View {
         .task {
             await viewModel.fetchVendors()
         }
+    }
+}
+
+struct VendorDetailView: View {
+    let vendor: Vendor
+    
+    var body: some View {
+        Form {
+            HStack {
+                InitialsIcon(name: vendor.displayName)
+                VStack(alignment: .leading) {
+                    Text(vendor.displayName)
+                        .font(.headline)
+                    Text(vendor.no)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Section(header: Text("Contact Information")) {
+                if let email = vendor.email {
+                    Text("Email: \(email)")
+                }
+                if let phoneNumber = vendor.phoneNumber {
+                    Text("Phone: \(phoneNumber)")
+                }
+            }
+            
+            Section(header: Text("Address")) {
+                Text("Address: \(vendor.address)")
+                Text("City: \(vendor.city)")
+                Text("State: \(vendor.county)")
+                Text("Post Code: \(vendor.postCode)")
+                Text("Country: \(vendor.countryRegionCode)")
+            }
+        }
+        .navigationTitle(vendor.displayName)
     }
 }
 

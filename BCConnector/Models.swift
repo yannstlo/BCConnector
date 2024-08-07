@@ -45,9 +45,31 @@ struct Customer: Identifiable, Codable {
 }
 
 struct Vendor: Identifiable, Codable {
-    let id: String
+    let no: String
     let displayName: String
-    let email: String
+    let name: String?
+    let address: String
+    let city: String
+    let county: String
+    let postCode: String
+    let countryRegionCode: String
+    let phoneNumber: String?
+    let email: String?
+    
+    var id: String { no }
+    
+    enum CodingKeys: String, CodingKey {
+        case no
+        case displayName
+        case name
+        case address
+        case city
+        case county
+        case postCode
+        case countryRegionCode
+        case phoneNumber
+        case email
+    }
 }
 
 struct Order: Identifiable, Codable {

@@ -101,6 +101,30 @@ struct ContentView: View {
     }
 }
 
+struct CustomerDetailView: View {
+    let customer: Customer
+    
+    var body: some View {
+        Form {
+            Section(header: Text("Customer Information")) {
+                HStack {
+                    InitialsIcon(name: customer.displayNameOrName)
+                    Text(customer.displayNameOrName)
+                        .font(.headline)
+                }
+                Text("Number: \(customer.no)")
+                if let phoneNumber = customer.phoneNumber {
+                    Text("Phone: \(phoneNumber)")
+                }
+                if let email = customer.email {
+                    Text("Email: \(email)")
+                }
+            }
+        }
+        .navigationTitle("Customer Details")
+    }
+}
+
 class AuthContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         return ASPresentationAnchor()
@@ -175,19 +199,13 @@ struct CustomersView: View {
                 if !viewModel.customers.isEmpty {
                     List {
                         ForEach(viewModel.customers) { customer in
-                            HStack {
-                                InitialsIcon(name: customer.displayNameOrName)
-                                VStack(alignment: .leading) {
-                                    Text(customer.displayNameOrName)
-                                        .font(.headline)
-                                    Text("Number: \(customer.no)")
-                                        .font(.subheadline)
-                                    if let phoneNumber = customer.phoneNumber {
-                                        Text("Phone: \(phoneNumber)")
-                                            .font(.subheadline)
-                                    }
-                                    if let email = customer.email {
-                                        Text("Email: \(email)")
+                            NavigationLink(destination: CustomerDetailView(customer: customer)) {
+                                HStack {
+                                    InitialsIcon(name: customer.displayNameOrName)
+                                    VStack(alignment: .leading) {
+                                        Text(customer.displayNameOrName)
+                                            .font(.headline)
+                                        Text("Number: \(customer.no)")
                                             .font(.subheadline)
                                     }
                                 }

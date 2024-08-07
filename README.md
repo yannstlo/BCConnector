@@ -104,3 +104,19 @@ If you encounter any issues or have questions, please file an issue on the GitHu
 
 - SwiftUI for providing a powerful framework for building user interfaces
 - Microsoft for their Dynamics 365 Business Central platform and authentication services
+- [aider.chat](https://aider.chat) for assistance in creating this app
+
+## Prerequisites
+
+Before using the BCConnector app, you need to set up the following:
+
+1. **Azure App Registration**: 
+   - Register your app in the Azure portal
+   - Configure the necessary permissions for Business Central API access
+   - Note down the Client ID and Client Secret
+
+2. **Business Central Entra Application**:
+   - Set up an Entra Application in your Business Central environment
+   - Configure the appropriate user permissions and roles
+
+Ensure both the Azure App Registration and BC Entra Application are properly configured for the BCConnector app to function correctly.

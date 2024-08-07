@@ -11,7 +11,8 @@ class CustomersViewModel: ObservableObject {
 
     func fetchCustomers() async {
         do {
-            let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("companies(\(settings.companyId))/customers")
+            let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("api/Yann/Hoskin/v1.0/companies(\(settings.companyId))/customers")
+//            api/Yann/Hoskin/v1.0/companies({{company_id}})/customers
             customers = response.value
             errorMessage = nil
         } catch let error as APIError {

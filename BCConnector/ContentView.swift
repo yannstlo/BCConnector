@@ -244,7 +244,7 @@ struct CustomersView: View {
                         ForEach(viewModel.customers) { customer in
                             NavigationLink(destination: CustomerDetailView(customer: customer)) {
                                 HStack {
-                                    InitialsIcon(name: customer.displayNameOrName)
+                                    InitialsIcon(name: customer.displayNameOrName, color: .orange)
                                     VStack(alignment: .leading) {
                                         Text(customer.displayNameOrName)
                                             .font(.headline)
@@ -282,7 +282,7 @@ struct VendorsView: View {
                         ForEach(viewModel.vendors) { vendor in
                             NavigationLink(destination: VendorDetailView(vendor: vendor)) {
                                 HStack {
-                                    InitialsIcon(name: vendor.name)
+                                    InitialsIcon(name: vendor.name, color: .blue)
                                     VStack(alignment: .leading) {
                                         Text(vendor.name)
                                             .font(.headline)
@@ -375,6 +375,7 @@ struct OrdersView: View {
 
 struct InitialsIcon: View {
     let name: String
+    let color: Color
     
     var initials: String {
         let words = name.split(separator: " ")
@@ -384,7 +385,7 @@ struct InitialsIcon: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(Color.orange)
+                .fill(color)
                 .frame(width: 40, height: 40)
             
             Text(initials)

@@ -1,22 +1,16 @@
 import SwiftUI
 import MapKit
 
-struct IdentifiablePointAnnotation: Identifiable {
-    let id = UUID()
-    var annotation: MKPointAnnotation
-}
-
 struct MapView: View {
     let address: String
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 37.33233141, longitude: -122.03121860),
-        span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
-    )
-    @State private var annotations: [IdentifiablePointAnnotation] = []
+    @State private var position: MapCameraPosition = .automatic
+    @State private var annotation: MKPointAnnotation?
 
     var body: some View {
-        Map(coordinateRegion: $region, annotationItems: annotations) { item in
-            MapMarker(coordinate: item.annotation.coordinate)
+        Map(position: $position) {
+            if let annotation = annotation {
+                Marker(coordinate: annotation.coordinate)
+            }
         }
         .onAppear {
             geocodeAddress()
@@ -32,10 +26,13 @@ struct MapView: View {
             }
             
             if let location = placemarks?.first?.location {
-                region.center = location.coordinate
-                let annotation = MKPointAnnotation()
-                annotation.coordinate = location.coordinate
-                annotations = [IdentifiablePointAnnotation(annotation: annotation)]
+                let newAnnotation = MKPointAnnotation()
+                newAnnotation.coordinate = location.coordinate
+                annotation = newAnnotation
+                position = .region(MKCoordinateRegion(
+                    center: location.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
+                ))
             }
         }
     }

@@ -315,7 +315,7 @@ struct VendorDetailView: View {
     var body: some View {
         Form {
             HStack {
-                InitialsIcon(name: vendor.name)
+                InitialsIcon(name: vendor.name, color: .blue)
                 VStack(alignment: .leading) {
                     Text(vendor.name)
                         .font(.headline)

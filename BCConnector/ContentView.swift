@@ -3,7 +3,7 @@ import AuthenticationServices
 import Foundation
 
 struct ContentView: View {
-    @StateObject private var authManager = AuthenticationManager.shared
+    @EnvironmentObject private var authManager: AuthenticationManager
     @EnvironmentObject private var settingsManager: SettingsManager
     @State private var isShowingSettings = false
     @State private var authContextProvider: AuthContextProvider?

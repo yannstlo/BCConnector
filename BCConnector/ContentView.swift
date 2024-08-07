@@ -118,11 +118,22 @@ struct CustomerDetailView: View {
             }
             
             Section(header: Text("Address")) {
-                Text("Address: \(customer.address)")
-                Text("City: \(customer.city)")
-                Text("State: \(customer.county)")
-                Text("Post Code: \(customer.postCode)")
-                Text("Country: \(customer.countryRegionCode)")
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("Address: \(customer.address)")
+                        Text("City: \(customer.city)")
+                        Text("State: \(customer.county)")
+                        Text("Post Code: \(customer.postCode)")
+                        Text("Country: \(customer.countryRegionCode)")
+                    }
+                    Spacer()
+                    Button(action: {
+                        openMap(for: customer)
+                    }) {
+                        Image(systemName: "map")
+                            .foregroundColor(.blue)
+                    }
+                }
             }
             
             Section(header: Text("Financial Information")) {
@@ -145,6 +156,15 @@ struct CustomerDetailView: View {
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"
         return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+    }
+    
+    private func openMap(for customer: Customer) {
+        let address = "\(customer.address), \(customer.city), \(customer.county) \(customer.postCode), \(customer.countryRegionCode)"
+        let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let mapString = "http://maps.apple.com/?address=\(encodedAddress)"
+        if let url = URL(string: mapString) {
+            UIApplication.shared.open(url)
+        }
     }
 }
 

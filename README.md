@@ -2,7 +2,12 @@
 
 BCConnector is a powerful SwiftUI application that seamlessly integrates with Microsoft Dynamics 365 Business Central, providing users with a user-friendly interface to view and manage customers, vendors, and orders on iOS devices.
 
-![BCConnector Screenshot]("screenshot1.png")
+<p align="center">
+  <img src="screenshot1.png" width="200" alt="BCConnector Screenshot 1">
+  <img src="screenshot2.png" width="200" alt="BCConnector Screenshot 2">
+  <img src="screenshot3.png" width="200" alt="BCConnector Screenshot 3">
+  <img src="screenshot4.png" width="200" alt="BCConnector Screenshot 4">
+</p>
 
 ## Features
 

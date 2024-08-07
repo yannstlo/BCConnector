@@ -107,7 +107,7 @@ struct CustomerDetailView: View {
     var body: some View {
         Form {
             HStack {
-                InitialsIcon(name: customer.displayNameOrName)
+                InitialsIcon(name: customer.displayNameOrName, color: .orange)
                 VStack(alignment: .leading) {
                     Text(customer.displayNameOrName)
                         .font(.headline)

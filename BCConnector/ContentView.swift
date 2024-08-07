@@ -122,12 +122,17 @@ struct CustomerDetailView: View {
                 Button(action: {
                     isShowingMap = true
                 }) {
-                    VStack(alignment: .leading) {
-                        Text("Address: \(customer.address)")
-                        Text("City: \(customer.city)")
-                        Text("State: \(customer.county)")
-                        Text("Post Code: \(customer.postCode)")
-                        Text("Country: \(customer.countryRegionCode)")
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Address: \(customer.address)")
+                            Text("City: \(customer.city)")
+                            Text("State: \(customer.county)")
+                            Text("Post Code: \(customer.postCode)")
+                            Text("Country: \(customer.countryRegionCode)")
+                        }
+                        Spacer()
+                        Image(systemName: "map")
+                            .foregroundColor(.blue)
                     }
                 }
                 .foregroundColor(.primary)

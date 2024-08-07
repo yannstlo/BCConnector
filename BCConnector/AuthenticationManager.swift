@@ -9,7 +9,7 @@ class AuthenticationManager: ObservableObject {
     private var redirectUri: String {
         settings.redirectUri
     }
-    private let scope = "https://api.businesscentral.dynamics.com/.default"
+    private let scope = "https://api.businesscentral.dynamics.com/.default offline_access"
     
     private var authorizationEndpoint: String {
         "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/authorize"
@@ -140,7 +140,8 @@ class AuthenticationManager: ObservableObject {
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": redirectUri,
-            "client_id": settings.clientId
+            "client_id": settings.clientId,
+            "scope": scope
         ]
         
         let bodyString = parameters.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
@@ -190,16 +191,20 @@ class AuthenticationManager: ObservableObject {
     }
     
     private func refreshAccessToken(refreshToken: String) async throws -> String {
-        var components = URLComponents(string: tokenEndpoint)!
-        components.queryItems = [
-            URLQueryItem(name: "grant_type", value: "refresh_token"),
-            URLQueryItem(name: "refresh_token", value: refreshToken),
-            URLQueryItem(name: "client_id", value: settings.clientId)
+        let parameters = [
+            "grant_type": "refresh_token",
+            "refresh_token": refreshToken,
+            "client_id": settings.clientId,
+            "scope": scope
         ]
         
-        var request = URLRequest(url: components.url!)
+        let bodyString = parameters.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
+        let bodyData = bodyString.data(using: .utf8)
+        
+        var request = URLRequest(url: URL(string: tokenEndpoint)!)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = bodyData
         
         let (data, _) = try await URLSession.shared.data(for: request)
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)

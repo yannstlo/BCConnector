@@ -175,18 +175,21 @@ struct CustomersView: View {
                 if !viewModel.customers.isEmpty {
                     List {
                         ForEach(viewModel.customers) { customer in
-                            VStack(alignment: .leading) {
-                                Text(customer.displayNameOrName)
-                                    .font(.headline)
-                                Text("Number: \(customer.no)")
-                                    .font(.subheadline)
-                                if let phoneNumber = customer.phoneNumber {
-                                    Text("Phone: \(phoneNumber)")
+                            HStack {
+                                InitialsIcon(name: customer.displayNameOrName)
+                                VStack(alignment: .leading) {
+                                    Text(customer.displayNameOrName)
+                                        .font(.headline)
+                                    Text("Number: \(customer.no)")
                                         .font(.subheadline)
-                                }
-                                if let email = customer.email {
-                                    Text("Email: \(email)")
-                                        .font(.subheadline)
+                                    if let phoneNumber = customer.phoneNumber {
+                                        Text("Phone: \(phoneNumber)")
+                                            .font(.subheadline)
+                                    }
+                                    if let email = customer.email {
+                                        Text("Email: \(email)")
+                                            .font(.subheadline)
+                                    }
                                 }
                             }
                         }
@@ -251,4 +254,25 @@ struct OrdersView: View {
 
 #Preview {
     ContentView()
+}
+
+struct InitialsIcon: View {
+    let name: String
+    
+    var initials: String {
+        let words = name.split(separator: " ")
+        return words.prefix(2).compactMap { $0.first }.map(String.init).joined()
+    }
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.orange)
+                .frame(width: 40, height: 40)
+            
+            Text(initials)
+                .foregroundColor(.white)
+                .font(.system(size: 16, weight: .bold))
+        }
+    }
 }

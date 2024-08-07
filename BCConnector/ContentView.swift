@@ -36,6 +36,12 @@ struct ContentView: View {
                         }
                         .tag(3)
                 }
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text("BCConnector")
+                            .font(.headline)
+                    }
+                }
                 .onAppear {
                     // Set the initial tab to Customers when authenticated
                     selectedTab = 0

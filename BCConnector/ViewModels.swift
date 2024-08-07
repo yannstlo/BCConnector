@@ -12,38 +12,41 @@ class CustomersViewModel: ObservableObject {
     func fetchCustomers() async {
         do {
             let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("api/Yann/Hoskin/v1.0/companies(\(settings.companyId))/customers")
-//            api/Yann/Hoskin/v1.0/companies({{company_id}})/customers
             customers = response.value
             errorMessage = nil
         } catch let error as APIError {
-            switch error {
-            case .authenticationError:
-                errorMessage = "Authentication error: Please check your credentials and try logging in again."
-            case .invalidURL:
-                errorMessage = "Invalid URL: Please check your Business Central settings."
-            case .networkError(let message):
-                errorMessage = "Network error: \(message)"
-            case .httpError(let statusCode, let errorResponse):
-                switch statusCode {
-                case 403:
-                    errorMessage = "Authorization error: You might not have permission to access customer data."
-                case 404:
-                    errorMessage = "Not Found error: The customer data resource might not exist."
-                default:
-                    errorMessage = "HTTP error: Status code \(statusCode)"
-                }
-                if let errorDetails = errorResponse?.error {
-                    errorMessage! += " - \(errorDetails.message)"
-                }
-            case .decodingError(let message):
-                errorMessage = "Decoding error: \(message)"
-            default:
-                errorMessage = "Unknown error: \(error.localizedDescription)"
-            }
+            handleAPIError(error)
         } catch {
             errorMessage = "Unexpected error: \(error.localizedDescription)"
         }
         print(errorMessage ?? "No error")
+    }
+    
+    private func handleAPIError(_ error: APIError) {
+        switch error {
+        case .authenticationError:
+            errorMessage = "Authentication error: Please check your credentials and try logging in again."
+        case .invalidURL:
+            errorMessage = "Invalid URL: Please check your Business Central settings."
+        case .networkError(let message):
+            errorMessage = "Network error: \(message)"
+        case .httpError(let statusCode, let errorResponse):
+            switch statusCode {
+            case 403:
+                errorMessage = "Authorization error: You might not have permission to access customer data."
+            case 404:
+                errorMessage = "Not Found error: The customer data resource might not exist."
+            default:
+                errorMessage = "HTTP error: Status code \(statusCode)"
+            }
+            if let errorDetails = errorResponse?.error {
+                errorMessage! += " - \(errorDetails.message)"
+            }
+        case .decodingError(let message):
+            errorMessage = "Decoding error: \(message). Please check if the API response structure has changed."
+        default:
+            errorMessage = "Unknown error: \(error.localizedDescription)"
+        }
     }
 }
 

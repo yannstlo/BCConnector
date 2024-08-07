@@ -1,16 +1,16 @@
 import Foundation
 
 struct Customer: Identifiable, Codable {
-    let id: String
+    let no: String
     let displayName: String
-    let number: String
     let phoneNumber: String?
     let email: String?
     
+    var id: String { no }
+    
     enum CodingKeys: String, CodingKey {
-        case id
+        case no
         case displayName
-        case number
         case phoneNumber
         case email
     }

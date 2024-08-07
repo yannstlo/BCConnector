@@ -17,6 +17,7 @@
 		AAC6D7792C627DE90002060B /* AuthenticationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC6D7782C627DE90002060B /* AuthenticationManager.swift */; };
 		AAC6D77C2C628E640002060B /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC6D77B2C628E640002060B /* SettingsManager.swift */; };
 		AAC6D77E2C63034C0002060B /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC6D77D2C63034C0002060B /* MapView.swift */; };
+		AAC6D7802C633ED60002060B /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = AAC6D77F2C633ED60002060B /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		AAC6D77A2C627EF40002060B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AAC6D77B2C628E640002060B /* SettingsManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		AAC6D77D2C63034C0002060B /* MapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
+		AAC6D77F2C633ED60002060B /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +50,7 @@
 		AAC6D7582C627CF30002060B = {
 			isa = PBXGroup;
 			children = (
+				AAC6D77F2C633ED60002060B /* README.md */,
 				AAC6D7632C627CF30002060B /* BCConnector */,
 				AAC6D7622C627CF30002060B /* Products */,
 			);
@@ -145,6 +148,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AAC6D7802C633ED60002060B /* README.md in Resources */,
 				AAC6D76C2C627CF40002060B /* Preview Assets.xcassets in Resources */,
 				AAC6D7692C627CF40002060B /* Assets.xcassets in Resources */,
 			);

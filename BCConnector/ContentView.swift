@@ -106,18 +106,14 @@ struct CustomerDetailView: View {
     
     var body: some View {
         Form {
-            Section(header: Text("Customer Information")) {
-                HStack {
-                    InitialsIcon(name: customer.displayNameOrName)
+            HStack {
+                InitialsIcon(name: customer.displayNameOrName)
+                VStack(alignment: .leading) {
                     Text(customer.displayNameOrName)
                         .font(.headline)
-                }
-                Text("Number: \(customer.no)")
-                if let phoneNumber = customer.phoneNumber {
-                    Text("Phone: \(phoneNumber)")
-                }
-                if let email = customer.email {
-                    Text("Email: \(email)")
+                    Text(customer.no)
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
             }
             

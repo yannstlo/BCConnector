@@ -172,12 +172,29 @@ struct CustomersView: View {
     var body: some View {
         NavigationView {
             Group {
-                if let errorMessage = viewModel.errorMessage {
+                if !viewModel.customers.isEmpty {
+                    List(viewModel.customers) { customer in
+                        VStack(alignment: .leading) {
+                            Text(customer.displayName)
+                                .font(.headline)
+                            Text("Number: \(customer.number)")
+                                .font(.subheadline)
+                            if let phoneNumber = customer.phoneNumber {
+                                Text("Phone: \(phoneNumber)")
+                                    .font(.subheadline)
+                            }
+                            if let email = customer.email {
+                                Text("Email: \(email)")
+                                    .font(.subheadline)
+                            }
+                        }
+                    }
+                } else if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
                         .foregroundColor(.red)
                         .padding()
                 } else {
-                    List(viewModel.customers) { customer in
+                    ProgressView("Loading customers...")
                         VStack(alignment: .leading) {
                             Text(customer.displayName)
                                 .font(.headline)

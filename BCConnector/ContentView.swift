@@ -282,9 +282,9 @@ struct VendorsView: View {
                         ForEach(viewModel.vendors) { vendor in
                             NavigationLink(destination: VendorDetailView(vendor: vendor)) {
                                 HStack {
-                                    InitialsIcon(name: vendor.displayName)
+                                    InitialsIcon(name: vendor.name)
                                     VStack(alignment: .leading) {
-                                        Text(vendor.displayName)
+                                        Text(vendor.name)
                                             .font(.headline)
                                         Text("Number: \(vendor.no)")
                                             .font(.subheadline)

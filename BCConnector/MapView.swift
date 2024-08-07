@@ -9,7 +9,7 @@ struct MapView: View {
     var body: some View {
         Map(position: $position) {
             if let annotation = annotation {
-                Marker(coordinate: annotation.coordinate)
+                Marker("Location", coordinate: annotation.coordinate)
             }
         }
         .onAppear {

@@ -89,7 +89,7 @@ Note: Some features may require an active internet connection to sync with Busin
 
 The BCConnector app requires certain API Pages to be created via an app extension. These API Pages can be found in the following repository:
 
-[BCAPIForIosApp](https://github.com/yannstlo/BCAPIForIosApp)
+[BCAPIForIosApp](https://github.com/yannstlo/BCAPIForIosApp) **Coming Soon**
 
 Please follow the instructions in the BCAPIForIosApp repository to set up the necessary API Pages for your BCConnector app. These API Pages are essential for the app to function properly and connect to the required data sources.
 

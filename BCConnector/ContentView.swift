@@ -307,6 +307,7 @@ struct VendorsView: View {
 
 struct VendorDetailView: View {
     let vendor: Vendor
+    @State private var isShowingMap = false
     
     var body: some View {
         Form {
@@ -327,12 +328,26 @@ struct VendorDetailView: View {
             }
             
             Section(header: Text("Address")) {
-                Text("Address: \(vendor.address)")
-                Text("Address 2: \(vendor.address2)")
-                Text("City: \(vendor.city)")
-                Text("County: \(vendor.county)")
-                Text("Post Code: \(vendor.postCode)")
-                Text("Country: \(vendor.countryRegionCode)")
+                Button(action: {
+                    isShowingMap = true
+                }) {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Address: \(vendor.address)")
+                            if !vendor.address2.isEmpty {
+                                Text("Address 2: \(vendor.address2)")
+                            }
+                            Text("City: \(vendor.city)")
+                            Text("County: \(vendor.county)")
+                            Text("Post Code: \(vendor.postCode)")
+                            Text("Country: \(vendor.countryRegionCode)")
+                        }
+                        Spacer()
+                        Image(systemName: "map")
+                            .foregroundColor(.blue)
+                    }
+                }
+                .foregroundColor(.primary)
             }
             
             Section(header: Text("Financial Information")) {
@@ -341,6 +356,9 @@ struct VendorDetailView: View {
             }
         }
         .navigationTitle(vendor.name)
+        .sheet(isPresented: $isShowingMap) {
+            MapView(address: "\(vendor.address), \(vendor.city), \(vendor.county) \(vendor.postCode), \(vendor.countryRegionCode)")
+        }
     }
 }
 

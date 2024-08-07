@@ -14,15 +14,18 @@ BCConnector is a powerful SwiftUI application that seamlessly integrates with Mi
 - **Secure Authentication**: Utilizes Microsoft Azure AD for robust and secure user authentication.
 - **Customer Management**: 
   - View a comprehensive list of customers
-  - Access detailed customer information
+  - Access detailed customer information including contact details, financial data, and sales information
   - Visualize customer locations on an interactive map
 - **Vendor Management**:
   - Browse through the list of vendors
-  - View detailed vendor information
+  - View detailed vendor information including contact details and financial data
   - Locate vendors on an interactive map
-- **Order Tracking**: Access and view order information directly from Business Central.
+- **Order Tracking**: 
+  - Access and view order information directly from Business Central
+  - See order details including customer name, order date, and total amount
 - **Interactive Map Integration**: Visualize customer and vendor addresses on an interactive map for better geographical context.
 - **Settings Management**: Easily configure and manage Business Central connection settings within the app.
+- **Offline Support**: Basic functionality available offline with data caching (coming soon).
 
 ## Requirements
 
@@ -67,10 +70,20 @@ Ensure all fields are filled correctly for the app to function properly.
 1. Launch the app and log in using your Microsoft account associated with Business Central.
 2. Once authenticated, you'll have access to the main features:
    - **Customers**: View customer list, access detailed information, and see locations on a map.
+     - Tap on a customer to view their full profile, including financial data and sales information.
+     - Use the map view to see the customer's location and get directions.
    - **Vendors**: Browse vendors, view detailed information, and visualize locations.
+     - Tap on a vendor to see their complete profile, including contact details and financial information.
+     - Use the map view to locate vendors geographically.
    - **Orders**: Access and view order information from Business Central.
+     - See a list of all orders with key information like customer name, date, and total amount.
+     - Tap on an order to view more details (feature coming soon).
    - **Settings**: Configure and manage your Business Central connection settings.
-3. Tap on any customer or vendor to view more details and see their location on the map.
+3. Use the search functionality to quickly find specific customers, vendors, or orders.
+4. Pull down to refresh the data on any list view.
+5. Tap on any address to open it in the Maps app for directions.
+
+Note: Some features may require an active internet connection to sync with Business Central.
 
 ## API Pages
 

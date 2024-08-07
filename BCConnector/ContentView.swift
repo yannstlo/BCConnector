@@ -141,7 +141,7 @@ struct CustomerDetailView: View {
                 Text("Gen. Bus. Posting Group: \(customer.genBusPostingGroup)")
             }
         }
-        .navigationTitle("Customer Details")
+        .navigationTitle(customer.displayNameOrName)
     }
     
     private func formatCurrency(_ amount: Double) -> String {

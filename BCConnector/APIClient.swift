@@ -25,7 +25,7 @@ class APIClient: ObservableObject {
     private let apiVersion = "v2.0"
     
     func fetch<T: Decodable>(_ endpoint: String) async throws -> T {
-        guard let url = URL(string: "\(baseURL)/\(apiVersion)/\(endpoint)") else {
+        guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
             throw APIError.invalidURL
         }
         

@@ -37,7 +37,7 @@ struct ContentView: View {
                         .tag(3)
                 }
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
+                    ToolbarItem(placement: .principal) {
                         Text("BCConnector")
                             .font(.headline)
                     }

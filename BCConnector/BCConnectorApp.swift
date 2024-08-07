@@ -8,6 +8,7 @@ struct BCConnectorApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authManager)
                 .environmentObject(settingsManager)
                 .onOpenURL { url in
                     Task {

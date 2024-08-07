@@ -120,8 +120,35 @@ struct CustomerDetailView: View {
                     Text("Email: \(email)")
                 }
             }
+            
+            Section(header: Text("Address")) {
+                Text("Address: \(customer.address)")
+                Text("City: \(customer.city)")
+                Text("State: \(customer.county)")
+                Text("Post Code: \(customer.postCode)")
+                Text("Country: \(customer.countryRegionCode)")
+            }
+            
+            Section(header: Text("Financial Information")) {
+                Text("Balance: \(formatCurrency(customer.balance))")
+                Text("Credit Limit: \(formatCurrency(customer.creditLimitLCY))")
+                Text("Payment Terms: \(customer.paymentTermsCode)")
+            }
+            
+            Section(header: Text("Sales Information")) {
+                Text("Salesperson: \(customer.salespersonCode)")
+                Text("Customer Posting Group: \(customer.customerPostingGroup)")
+                Text("Gen. Bus. Posting Group: \(customer.genBusPostingGroup)")
+            }
         }
         .navigationTitle("Customer Details")
+    }
+    
+    private func formatCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
     }
 }
 

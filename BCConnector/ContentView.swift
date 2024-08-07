@@ -103,6 +103,7 @@ struct ContentView: View {
 
 struct CustomerDetailView: View {
     let customer: Customer
+    @State private var isShowingMap = false
     
     var body: some View {
         Form {
@@ -118,7 +119,9 @@ struct CustomerDetailView: View {
             }
             
             Section(header: Text("Address")) {
-                HStack {
+                Button(action: {
+                    isShowingMap = true
+                }) {
                     VStack(alignment: .leading) {
                         Text("Address: \(customer.address)")
                         Text("City: \(customer.city)")
@@ -126,14 +129,8 @@ struct CustomerDetailView: View {
                         Text("Post Code: \(customer.postCode)")
                         Text("Country: \(customer.countryRegionCode)")
                     }
-                    Spacer()
-                    Button(action: {
-                        openMap(for: customer)
-                    }) {
-                        Image(systemName: "map")
-                            .foregroundColor(.blue)
-                    }
                 }
+                .foregroundColor(.primary)
             }
             
             Section(header: Text("Financial Information")) {
@@ -149,6 +146,9 @@ struct CustomerDetailView: View {
             }
         }
         .navigationTitle(customer.displayNameOrName)
+        .sheet(isPresented: $isShowingMap) {
+            MapView(address: "\(customer.address), \(customer.city), \(customer.county) \(customer.postCode), \(customer.countryRegionCode)")
+        }
     }
     
     private func formatCurrency(_ amount: Double) -> String {
@@ -156,15 +156,6 @@ struct CustomerDetailView: View {
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"
         return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
-    }
-    
-    private func openMap(for customer: Customer) {
-        let address = "\(customer.address), \(customer.city), \(customer.county) \(customer.postCode), \(customer.countryRegionCode)"
-        let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let mapString = "http://maps.apple.com/?address=\(encodedAddress)"
-        if let url = URL(string: mapString) {
-            UIApplication.shared.open(url)
-        }
     }
 }
 

@@ -109,6 +109,7 @@ struct SettingsView: View {
     @State private var tempCompanyId: String = ""
     @State private var tempEnvironment: String = ""
     @State private var tempRedirectUri: String = ""
+    @EnvironmentObject private var authManager: AuthenticationManager
     
     var body: some View {
         Form {
@@ -138,6 +139,13 @@ struct SettingsView: View {
                 Text("Company ID: \(settings.companyId)")
                 Text("Environment: \(settings.environment)")
                 Text("Redirect URI: \(settings.redirectUri)")
+            }
+            
+            Section {
+                Button("Log Out") {
+                    authManager.logout()
+                }
+                .foregroundColor(.red)
             }
         }
         .navigationTitle("Settings")

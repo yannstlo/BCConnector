@@ -176,7 +176,7 @@ struct CustomersView: View {
                     List {
                         ForEach(viewModel.customers) { customer in
                             VStack(alignment: .leading) {
-                                Text(customer.displayName)
+                                Text(customer.displayNameOrName)
                                     .font(.headline)
                                 Text("Number: \(customer.no)")
                                     .font(.subheadline)

@@ -69,11 +69,13 @@ class AuthenticationManager: ObservableObject {
     }
     
     func startAuthentication() -> URL? {
-        print("Starting authentication...")
-        print("Client ID: \(settings.clientId)")
-        print("Tenant ID: \(settings.tenantId)")
-        print("Redirect URI: \(redirectUri)")
-        print("Scope: \(scope)")
+        if settings.networkLoggingEnabled {
+            print("[Auth] Starting authentication…")
+            print("[Auth] Client ID: \(settings.clientId)")
+            print("[Auth] Tenant ID: \(settings.tenantId)")
+            print("[Auth] Redirect URI: \(redirectUri)")
+            print("[Auth] Scope: \(scope)")
+        }
         
         var components = URLComponents(string: authorizationEndpoint)
         components?.queryItems = [
@@ -88,7 +90,7 @@ class AuthenticationManager: ObservableObject {
             return nil
         }
         
-        print("Authentication URL: \(authURL)")
+        if settings.networkLoggingEnabled { print("[Auth] URL: \(authURL)") }
         return authURL
     }
 
@@ -155,8 +157,9 @@ class AuthenticationManager: ObservableObject {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.httpBody = bodyData
         
-        print("Token request URL: \(request.url?.absoluteString ?? "nil")")
-        print("Token request headers: \(request.allHTTPHeaderFields ?? [:])")
+        if settings.networkLoggingEnabled {
+            print("[Auth] Token request: \(request.url?.absoluteString ?? "nil")")
+        }
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -164,11 +167,7 @@ class AuthenticationManager: ObservableObject {
             throw APIError.networkError("Invalid response")
         }
         
-        print("Token response status code: \(httpResponse.statusCode)")
-        
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("Token response body: \(responseString)")
-        }
+        if settings.networkLoggingEnabled { print("[Auth] Token status: \(httpResponse.statusCode)") }
         
         guard httpResponse.statusCode == 200 else {
             throw APIError.httpError(httpResponse.statusCode, nil)
@@ -188,7 +187,7 @@ class AuthenticationManager: ObservableObject {
             
             return tokenResponse.accessToken
         } catch {
-            print("Error decoding token response: \(error)")
+            if settings.networkLoggingEnabled { print("[Auth] Token decode error: \(error)") }
             throw APIError.decodingError(error.localizedDescription)
         }
     }

@@ -49,6 +49,25 @@ class CustomersViewModel: ObservableObject {
             errorMessage = "Unknown error: \(error.localizedDescription)"
         }
     }
+
+    func searchCustomers(query: String) async {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else {
+            await fetchCustomers()
+            return
+        }
+        do {
+            let esc = q.replacingOccurrences(of: "'", with: "''")
+            // Search in displayName, number, city
+            let filter = "$filter=contains(displayName,'\(esc)') or contains(number,'\(esc)') or contains(city,'\(esc)')"
+            let path = "api/v2.0/companies(\(settings.companyId))/customers?\(filter)&$top=50"
+            let response: BusinessCentralResponse<CustomerDTO> = try await APIClient.shared.fetch(path)
+            customers = response.value.map(Customer.init(dto:))
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
 @MainActor
@@ -98,21 +117,94 @@ class VendorsViewModel: ObservableObject {
             errorMessage = "Unknown error: \(error.localizedDescription)"
         }
     }
+
+    func searchVendors(query: String) async {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else {
+            await fetchVendors()
+            return
+        }
+        do {
+            let esc = q.replacingOccurrences(of: "'", with: "''")
+            let filter = "$filter=contains(displayName,'\(esc)') or contains(number,'\(esc)')"
+            let path = "api/v2.0/companies(\(settings.companyId))/vendors?\(filter)&$top=50"
+            let response: BusinessCentralResponse<VendorDTO> = try await APIClient.shared.fetch(path)
+            vendors = response.value.map(Vendor.init(dto:))
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
 @MainActor
 class OrdersViewModel: ObservableObject {
-    @Published var orders: [Order] = []
+    @Published var orders: [OrderDTO] = []
     
     @ObservedObject private var settings = SettingsManager.shared
     
     func fetchOrders() async {
         do {
-            let response: BusinessCentralResponse<OrderDTO> = try await APIClient.shared.fetch("companies(\(settings.companyId))/salesOrders")
-            orders = response.value.map(Order.init(dto:))
+            let select = "$select=id,number,status,orderDate,totalAmountIncludingTax,totalAmountExcludingTax,customerName,fullyShipped"
+            let orderBy = "$orderby=orderDate desc"
+            let path = "api/v2.0/companies(\(settings.companyId))/salesOrders?\(select)&\(orderBy)&$top=50"
+            let dtos: [OrderDTO] = try await APIClient.shared.fetchPaged(path)
+            orders = dtos
         } catch {
             print("Error fetching orders: \(error)")
         }
     }
+
+    func searchOrders(query: String) async {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else {
+            await fetchOrders()
+            return
+        }
+        do {
+            let esc = q.replacingOccurrences(of: "'", with: "''")
+            let select = "$select=id,number,status,orderDate,totalAmountIncludingTax,totalAmountExcludingTax,customerName,fullyShipped"
+            let filter = "$filter=contains(number,'\(esc)') or contains(customerName,'\(esc)') or contains(status,'\(esc)')"
+            let orderBy = "$orderby=orderDate desc"
+            let path = "api/v2.0/companies(\(settings.companyId))/salesOrders?\(select)&\(filter)&\(orderBy)&$top=50"
+            let dtos: [OrderDTO] = try await APIClient.shared.fetchPaged(path)
+            orders = dtos
+        } catch {
+            print("Error searching orders: \(error)")
+        }
+    }
 }
 
+@MainActor
+class ItemsSearchAdapter: ObservableObject {
+    @ObservedObject private var settings = SettingsManager.shared
+    func searchItems(query: String) async throws -> [ItemDTO] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if q.isEmpty { return [] }
+        let esc = q.replacingOccurrences(of: "'", with: "''")
+        let select = "$select=id,number,displayName"
+        let filter = "$filter=contains(displayName,'\(esc)') or contains(number,'\(esc)')"
+        let path = "api/v2.0/companies(\(settings.companyId))/items?\(select)&\(filter)&$top=50"
+        let resp: BusinessCentralResponse<ItemDTO> = try await APIClient.shared.fetch(path)
+        return resp.value
+    }
+}
+
+@MainActor
+class ItemsViewModel: ObservableObject {
+    @Published var items: [ItemDTO] = []
+    @ObservedObject private var settings = SettingsManager.shared
+    @Published var errorMessage: String?
+
+    func fetchItems() async {
+        do {
+            let select = "$select=id,number,displayName"
+            let path = "api/v2.0/companies(\(settings.companyId))/items?\(select)&$top=100"
+            let resp: BusinessCentralResponse<ItemDTO> = try await APIClient.shared.fetch(path)
+            items = resp.value
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}

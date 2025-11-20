@@ -21,9 +21,39 @@ struct CustomerDTO: Codable, Identifiable {
     let lastModifiedDateTime: String?
 }
 
+// Items
+struct ItemDTO: Codable, Identifiable {
+    let id: String
+    let number: String?
+    let displayName: String?
+    let description: String?
+}
+
+// Rich item detail DTO (optional fields mapped if available)
+struct ItemDetailDTO: Codable, Identifiable {
+    let id: String
+    let number: String?
+    let displayName: String?
+    let type: String?
+    let itemCategoryCode: String?
+    let blocked: Bool?
+    let baseUnitOfMeasureId: String?
+    let baseUnitOfMeasure: String?
+    let gtin: String?
+    let unitPrice: Decimal?
+    let unitCost: Decimal?
+    let inventory: Decimal?
+    let grossWeight: Decimal?
+    let netWeight: Decimal?
+    let shelfNo: String?
+    let createdDateTime: String?
+    let lastModifiedDateTime: String?
+}
+
 extension Customer {
     init(dto: CustomerDTO) {
         self.init(
+            bcId: dto.id,
             no: dto.number ?? "",
             displayNameOrName: dto.displayName ?? "",
             address: dto.addressLine1 ?? "",

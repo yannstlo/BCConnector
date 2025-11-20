@@ -1,9 +1,10 @@
 import Foundation
 
-struct Customer: Identifiable, Codable {
-    // Use 'no' as a stable identifier if there is no explicit 'id' from the API
+struct Customer: Identifiable {
+    // Use 'no' as a stable identifier for UI list identity; store BC GUID separately
     var id: String { no }
 
+    let bcId: String
     let no: String
     let displayNameOrName: String
     let address: String
@@ -18,19 +19,5 @@ struct Customer: Identifiable, Codable {
     let customerPostingGroup: String
     let genBusPostingGroup: String
 
-    enum CodingKeys: String, CodingKey {
-        case no
-        case displayNameOrName = "displayName" // change to "name" if your API returns name instead
-        case address
-        case city
-        case county
-        case postCode
-        case countryRegionCode
-        case balance
-        case creditLimitLCY
-        case paymentTermsCode
-        case salespersonCode
-        case customerPostingGroup
-        case genBusPostingGroup
-    }
+    // No Codable conformance: this model is built from DTOs
 }

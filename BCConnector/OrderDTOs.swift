@@ -2,9 +2,27 @@ import Foundation
 
 struct OrderDTO: Codable, Identifiable {
     let id: String
+    let number: String?
+    let status: String?
     let customerName: String?
     let orderDate: String?
     let totalAmountExcludingTax: Decimal?
+    let totalAmountIncludingTax: Decimal?
+    let lastModifiedDateTime: String?
+    let fullyShipped: Bool?
+}
+
+struct SalesOrderLineDTO: Codable, Identifiable {
+    let id: String
+    let sequence: Int?
+    let lineType: String?
+    let lineObjectNumber: String?
+    let itemId: String?
+    let description: String?
+    let quantity: Decimal?
+    let unitPrice: Decimal?
+    let amountExcludingTax: Decimal?
+    let amountIncludingTax: Decimal?
 }
 
 extension Order {

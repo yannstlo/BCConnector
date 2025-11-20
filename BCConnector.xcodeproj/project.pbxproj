@@ -18,6 +18,12 @@
 		AAC6D77C2C628E640002060B /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC6D77B2C628E640002060B /* SettingsManager.swift */; };
 		AAC6D77E2C63034C0002060B /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC6D77D2C63034C0002060B /* MapView.swift */; };
 		AAC6D7802C633ED60002060B /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = AAC6D77F2C633ED60002060B /* README.md */; };
+		AAE812512EC9760300B9F511 /* EnvironmentCompanySelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE812502EC9760200B9F511 /* EnvironmentCompanySelectionView.swift */; };
+		AAE812532EC9993500B9F511 /* Customer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE812522EC9993500B9F511 /* Customer.swift */; };
+		AAE812552EC9A21900B9F511 /* Models 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE812542EC9A21900B9F511 /* Models 2.swift */; };
+		AAE812572EC9A3F000B9F511 /* DTOs.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE812562EC9A3F000B9F511 /* DTOs.swift */; };
+		AAE812592EC9A43300B9F511 /* VendorDTOs.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE812582EC9A43300B9F511 /* VendorDTOs.swift */; };
+		AAE8125B2EC9A44D00B9F511 /* OrderDTOs.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE8125A2EC9A44D00B9F511 /* OrderDTOs.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +40,12 @@
 		AAC6D77B2C628E640002060B /* SettingsManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		AAC6D77D2C63034C0002060B /* MapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		AAC6D77F2C633ED60002060B /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		AAE812502EC9760200B9F511 /* EnvironmentCompanySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentCompanySelectionView.swift; sourceTree = "<group>"; };
+		AAE812522EC9993500B9F511 /* Customer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Customer.swift; sourceTree = "<group>"; };
+		AAE812542EC9A21900B9F511 /* Models 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models 2.swift"; sourceTree = "<group>"; };
+		AAE812562EC9A3F000B9F511 /* DTOs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTOs.swift; sourceTree = "<group>"; };
+		AAE812582EC9A43300B9F511 /* VendorDTOs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VendorDTOs.swift; sourceTree = "<group>"; };
+		AAE8125A2EC9A44D00B9F511 /* OrderDTOs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderDTOs.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +90,12 @@
 				AAC6D7762C627D7E0002060B /* ViewModels.swift */,
 				AAC6D77B2C628E640002060B /* SettingsManager.swift */,
 				AAC6D77D2C63034C0002060B /* MapView.swift */,
+				AAE812502EC9760200B9F511 /* EnvironmentCompanySelectionView.swift */,
+				AAE812522EC9993500B9F511 /* Customer.swift */,
+				AAE812542EC9A21900B9F511 /* Models 2.swift */,
+				AAE812562EC9A3F000B9F511 /* DTOs.swift */,
+				AAE812582EC9A43300B9F511 /* VendorDTOs.swift */,
+				AAE8125A2EC9A44D00B9F511 /* OrderDTOs.swift */,
 			);
 			path = BCConnector;
 			sourceTree = "<group>";
@@ -162,13 +180,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				AAC6D7672C627CF30002060B /* ContentView.swift in Sources */,
+				AAE812532EC9993500B9F511 /* Customer.swift in Sources */,
+				AAE8125B2EC9A44D00B9F511 /* OrderDTOs.swift in Sources */,
 				AAC6D77E2C63034C0002060B /* MapView.swift in Sources */,
+				AAE812572EC9A3F000B9F511 /* DTOs.swift in Sources */,
 				AAC6D7652C627CF30002060B /* BCConnectorApp.swift in Sources */,
+				AAE812512EC9760300B9F511 /* EnvironmentCompanySelectionView.swift in Sources */,
 				AAC6D7772C627D7E0002060B /* ViewModels.swift in Sources */,
 				AAC6D77C2C628E640002060B /* SettingsManager.swift in Sources */,
 				AAC6D7792C627DE90002060B /* AuthenticationManager.swift in Sources */,
+				AAE812592EC9A43300B9F511 /* VendorDTOs.swift in Sources */,
 				AAC6D7732C627D300002060B /* APIClient.swift in Sources */,
 				AAC6D7752C627D680002060B /* Models.swift in Sources */,
+				AAE812552EC9A21900B9F511 /* Models 2.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

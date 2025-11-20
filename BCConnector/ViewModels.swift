@@ -11,8 +11,9 @@ class CustomersViewModel: ObservableObject {
 
     func fetchCustomers() async {
         do {
-            let response: BusinessCentralResponse<Customer> = try await APIClient.shared.fetch("api/Yann/Hoskin/v1.0/companies(\(settings.companyId))/customers")
-            customers = response.value
+            let path = "api/v2.0/companies(\(settings.companyId))/customers"
+            let response: BusinessCentralResponse<CustomerDTO> = try await APIClient.shared.fetch(path)
+            customers = response.value.map(Customer.init(dto:))
             errorMessage = nil
         } catch let error as APIError {
             handleAPIError(error)
@@ -50,10 +51,6 @@ class CustomersViewModel: ObservableObject {
     }
 }
 
-struct CustomerResponse: Codable {
-    let value: [Customer]
-}
-
 @MainActor
 class VendorsViewModel: ObservableObject {
     @Published var vendors: [Vendor] = []
@@ -63,8 +60,9 @@ class VendorsViewModel: ObservableObject {
 
     func fetchVendors() async {
         do {
-            let response: BusinessCentralResponse<Vendor> = try await APIClient.shared.fetch("api/Yann/Hoskin/v1.0/companies(\(settings.companyId))/vendors")
-            vendors = response.value
+            let path = "api/v2.0/companies(\(settings.companyId))/vendors"
+            let response: BusinessCentralResponse<VendorDTO> = try await APIClient.shared.fetch(path)
+            vendors = response.value.map(Vendor.init(dto:))
             errorMessage = nil
         } catch let error as APIError {
             handleAPIError(error)
@@ -110,10 +108,11 @@ class OrdersViewModel: ObservableObject {
     
     func fetchOrders() async {
         do {
-            let response: BusinessCentralResponse<Order> = try await APIClient.shared.fetch("companies(\(settings.companyId))/salesOrders")
-            orders = response.value
+            let response: BusinessCentralResponse<OrderDTO> = try await APIClient.shared.fetch("companies(\(settings.companyId))/salesOrders")
+            orders = response.value.map(Order.init(dto:))
         } catch {
             print("Error fetching orders: \(error)")
         }
     }
 }
+

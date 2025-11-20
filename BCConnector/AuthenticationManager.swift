@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Security
 
 class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
@@ -29,12 +30,12 @@ class AuthenticationManager: ObservableObject {
     
     private var accessToken: String? {
         didSet {
-            UserDefaults.standard.set(accessToken, forKey: "accessToken")
+            try? KeychainHelper.set(accessToken, for: "accessToken")
         }
     }
     private var refreshToken: String? {
         didSet {
-            UserDefaults.standard.set(refreshToken, forKey: "refreshToken")
+            try? KeychainHelper.set(refreshToken, for: "refreshToken")
         }
     }
     private var expirationDate: Date? {
@@ -44,8 +45,8 @@ class AuthenticationManager: ObservableObject {
     }
     
     private func loadTokens() {
-        accessToken = UserDefaults.standard.string(forKey: "accessToken")
-        refreshToken = UserDefaults.standard.string(forKey: "refreshToken")
+        accessToken = (try? KeychainHelper.get("accessToken")) ?? UserDefaults.standard.string(forKey: "accessToken")
+        refreshToken = (try? KeychainHelper.get("refreshToken")) ?? UserDefaults.standard.string(forKey: "refreshToken")
         expirationDate = UserDefaults.standard.object(forKey: "expirationDate") as? Date
         isAuthenticated = accessToken != nil
     }
@@ -117,6 +118,8 @@ class AuthenticationManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "accessToken")
         UserDefaults.standard.removeObject(forKey: "refreshToken")
         UserDefaults.standard.removeObject(forKey: "expirationDate")
+        KeychainHelper.delete("accessToken")
+        KeychainHelper.delete("refreshToken")
         DispatchQueue.main.async {
             self.isAuthenticated = false
         }

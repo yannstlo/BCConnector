@@ -4,4 +4,10 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:KeychainHelper.swift">
+   </FileRef>
+   <FileRef
+      location = "group:OpenAIClient.swift">
+   </FileRef>
 </Workspace>

@@ -8,43 +8,70 @@ struct ContentView: View {
     @State private var isShowingSettings = false
     @State private var authContextProvider: AuthContextProvider?
     @State private var selectedTab = 0
+    @State private var isShowingWorkspaceSelection = false
     @State private var authSession: ASWebAuthenticationSession?
     
     var body: some View {
         Group {
             if authManager.isAuthenticated {
                 // Your main app content
-                TabView(selection: $selectedTab) {
-                    CustomersView()
-                        .tabItem {
-                            Label("Customers", systemImage: "person.3")
+                VStack(spacing: 0) {
+                    if settingsManager.environment.isEmpty || settingsManager.companyId.isEmpty {
+                        HStack(alignment: .top) {
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.yellow)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Complete setup").font(.headline)
+                                Text("Select your environment and company to begin.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button("Select") {
+                                isShowingWorkspaceSelection = true
+                            }
                         }
-                        .tag(0)
-                    VendorsView()
-                        .tabItem {
-                            Label("Vendors", systemImage: "building.2")
-                        }
-                        .tag(1)
-                    OrdersView()
-                        .tabItem {
-                            Label("Orders", systemImage: "list.clipboard")
-                        }
-                        .tag(2)
-                    SettingsView(settings: settingsManager)
-                        .tabItem {
-                            Label("Settings", systemImage: "gear")
-                        }
-                        .tag(3)
-                }
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text("BCConnector")
-                            .font(.headline)
+                        .padding()
+                        .background(Color.yellow.opacity(0.15))
                     }
-                }
-                .onAppear {
-                    // Set the initial tab to Customers when authenticated
-                    selectedTab = 0
+
+                    TabView(selection: $selectedTab) {
+                        CustomersView()
+                            .tabItem {
+                                Label("Customers", systemImage: "person.3")
+                            }
+                            .tag(0)
+                        VendorsView()
+                            .tabItem {
+                                Label("Vendors", systemImage: "building.2")
+                            }
+                            .tag(1)
+                        OrdersView()
+                            .tabItem {
+                                Label("Orders", systemImage: "list.clipboard")
+                            }
+                            .tag(2)
+                        SettingsView(settings: settingsManager)
+                            .tabItem {
+                                Label("Settings", systemImage: "gear")
+                            }
+                            .tag(3)
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            Text("BCConnector")
+                                .font(.headline)
+                        }
+                    }
+                    .onAppear {
+                        // Set the initial tab to Customers when authenticated
+                        selectedTab = 0
+                        isShowingWorkspaceSelection = settingsManager.environment.isEmpty || settingsManager.companyId.isEmpty
+                    }
+                    .sheet(isPresented: $isShowingWorkspaceSelection) {
+                        EnvironmentCompanySelectionView()
+                            .environmentObject(authManager)
+                            .environmentObject(settingsManager)
+                    }
                 }
             } else {
                 VStack {
@@ -67,6 +94,9 @@ struct ContentView: View {
             if newValue {
                 selectedTab = 0
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowWorkspaceSelection"))) { _ in
+            isShowingWorkspaceSelection = true
         }
     }
     
@@ -178,6 +208,7 @@ struct SettingsView: View {
     @State private var tempCompanyId: String = ""
     @State private var tempEnvironment: String = ""
     @State private var tempRedirectUri: String = ""
+    @State private var tempOpenAIAPIKey: String = ""
     @EnvironmentObject private var authManager: AuthenticationManager
     
     var body: some View {
@@ -191,6 +222,15 @@ struct SettingsView: View {
                 TextField("Redirect URI", text: $tempRedirectUri)
             }
             
+            Section(header: Text("Workspace")) {
+                Button("Switch Environment/Company") {
+                    // Present the selection flow via a notification to ContentView
+                    NotificationCenter.default.post(name: Notification.Name("ShowWorkspaceSelection"), object: nil)
+                }
+                Text("Current Environment: \(settings.environment.isEmpty ? "Not set" : settings.environment)")
+                Text("Current Company ID: \(settings.companyId.isEmpty ? "Not set" : settings.companyId)")
+            }
+            
             Section {
                 Button("Save Changes") {
                     settings.clientId = tempClientId
@@ -199,6 +239,7 @@ struct SettingsView: View {
                     settings.companyId = tempCompanyId
                     settings.environment = tempEnvironment
                     settings.redirectUri = tempRedirectUri
+                    settings.openAIAPIKey = tempOpenAIAPIKey
                 }
             }
             
@@ -208,6 +249,7 @@ struct SettingsView: View {
                 Text("Company ID: \(settings.companyId)")
                 Text("Environment: \(settings.environment)")
                 Text("Redirect URI: \(settings.redirectUri)")
+                Text("OpenAI API Key: \(settings.openAIAPIKey.isEmpty ? "Not set" : "••••••••")")
             }
             
             Section {
@@ -225,6 +267,7 @@ struct SettingsView: View {
             tempCompanyId = settings.companyId
             tempEnvironment = settings.environment
             tempRedirectUri = settings.redirectUri
+            tempOpenAIAPIKey = settings.openAIAPIKey
         }
     }
 }
@@ -408,3 +451,4 @@ struct InitialsIcon: View {
         }
     }
 }
+

@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Security
+import CryptoKit
 
 class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
@@ -10,13 +11,27 @@ class AuthenticationManager: ObservableObject {
     private var redirectUri: String {
         settings.redirectUri
     }
-    private let scope = "https://api.businesscentral.dynamics.com/.default offline_access"
+    private var oauthTenant: String {
+        let tenant = settings.tenantId.trimmingCharacters(in: .whitespacesAndNewlines)
+        return tenant.isEmpty ? "organizations" : tenant
+    }
+    private let scopes = [
+        "openid",
+        "profile",
+        "offline_access",
+        "https://api.businesscentral.dynamics.com/user_impersonation"
+    ]
+    private var scope: String {
+        scopes.joined(separator: " ")
+    }
+    private var codeVerifier: String?
+    private var authState: String?
     
     private var authorizationEndpoint: String {
-        "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/authorize"
+        "https://login.microsoftonline.com/\(oauthTenant)/oauth2/v2.0/authorize"
     }
     private var tokenEndpoint: String {
-        "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/token"
+        "https://login.microsoftonline.com/\(oauthTenant)/oauth2/v2.0/token"
     }
     private var apiEndpoint: String {
         "https://api.businesscentral.dynamics.com/v2.0/\(settings.environment)/api/v2.0"
@@ -73,15 +88,26 @@ class AuthenticationManager: ObservableObject {
             print("[Auth] Starting authentication…")
             print("[Auth] Client ID: \(settings.clientId)")
             print("[Auth] Tenant ID: \(settings.tenantId)")
+            print("[Auth] OAuth Tenant: \(oauthTenant)")
             print("[Auth] Redirect URI: \(redirectUri)")
             print("[Auth] Scope: \(scope)")
         }
         
         var components = URLComponents(string: authorizationEndpoint)
+        let verifier = Self.generateCodeVerifier()
+        codeVerifier = verifier
+        let state = UUID().uuidString
+        authState = state
+        let challenge = Self.codeChallenge(for: verifier)
         components?.queryItems = [
             URLQueryItem(name: "client_id", value: settings.clientId),
             URLQueryItem(name: "redirect_uri", value: redirectUri),
             URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "response_mode", value: "query"),
+            URLQueryItem(name: "prompt", value: "login"),
+            URLQueryItem(name: "code_challenge", value: challenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256"),
+            URLQueryItem(name: "state", value: state),
             URLQueryItem(name: "scope", value: scope)
         ]
         
@@ -94,16 +120,26 @@ class AuthenticationManager: ObservableObject {
         return authURL
     }
 
-    // Helper function to percent-encode the client ID
-    private func percentEncodedClientId() -> String {
-        let allowedCharacters = CharacterSet(charactersIn: "!*'();:@&=+$,/?%#[]").inverted
-        return settings.clientId.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? settings.clientId
-    }
-
     func handleRedirect(url: URL) async throws {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              let code = components.queryItems?.first(where: { $0.name == "code" })?.value
-        else {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+            throw APIError.authenticationError(nil)
+        }
+
+        if let error = components.queryItems?.first(where: { $0.name == "error" })?.value {
+            let description = components.queryItems?.first(where: { $0.name == "error_description" })?.value
+            throw APIError.authenticationError(Self.authErrorResponse(code: error, message: description ?? error))
+        }
+
+        if let expectedState = authState,
+           let returnedState = components.queryItems?.first(where: { $0.name == "state" })?.value,
+           returnedState != expectedState {
+            throw APIError.authenticationError(Self.authErrorResponse(
+                code: "state_mismatch",
+                message: "Authentication state mismatch."
+            ))
+        }
+
+        guard let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
             throw APIError.authenticationError(nil)
         }
 
@@ -111,6 +147,8 @@ class AuthenticationManager: ObservableObject {
         await MainActor.run {
             self.isAuthenticated = true
         }
+        authState = nil
+        codeVerifier = nil
     }
 
     func logout() {
@@ -141,16 +179,18 @@ class AuthenticationManager: ObservableObject {
     
     private func exchangeCodeForTokens(code: String) async throws -> String {
         // Construct the token request
-        let parameters = [
+        var parameters = [
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": redirectUri,
             "client_id": settings.clientId,
             "scope": scope
         ]
+        if let verifier = codeVerifier {
+            parameters["code_verifier"] = verifier
+        }
         
-        let bodyString = parameters.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
-        let bodyData = bodyString.data(using: .utf8)
+        let bodyData = formEncodedBody(from: parameters)
         
         var request = URLRequest(url: URL(string: tokenEndpoint)!)
         request.httpMethod = "POST"
@@ -179,6 +219,7 @@ class AuthenticationManager: ObservableObject {
             self.accessToken = tokenResponse.accessToken
             self.refreshToken = tokenResponse.refreshToken
             self.expirationDate = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+            updateTenantIdIfPossible(from: tokenResponse.accessToken)
             
             // If we didn't receive a refresh token, we should clear any existing one
             if tokenResponse.refreshToken == nil {
@@ -200,8 +241,7 @@ class AuthenticationManager: ObservableObject {
             "scope": scope
         ]
         
-        let bodyString = parameters.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
-        let bodyData = bodyString.data(using: .utf8)
+        let bodyData = formEncodedBody(from: parameters)
         
         var request = URLRequest(url: URL(string: tokenEndpoint)!)
         request.httpMethod = "POST"
@@ -214,8 +254,76 @@ class AuthenticationManager: ObservableObject {
         self.accessToken = tokenResponse.accessToken
         self.refreshToken = tokenResponse.refreshToken
         self.expirationDate = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+        updateTenantIdIfPossible(from: tokenResponse.accessToken)
         
         return tokenResponse.accessToken
+    }
+
+    private static func generateCodeVerifier(length: Int = 64) -> String {
+        var bytes = [UInt8](repeating: 0, count: length)
+        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        if status != errSecSuccess {
+            return UUID().uuidString.replacingOccurrences(of: "-", with: "")
+        }
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private static func codeChallenge(for verifier: String) -> String {
+        let data = Data(verifier.utf8)
+        let digest = SHA256.hash(data: data)
+        return Data(digest)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private func formEncodedBody(from parameters: [String: String]) -> Data? {
+        var components = URLComponents()
+        components.queryItems = parameters
+            .sorted(by: { $0.key < $1.key })
+            .map { URLQueryItem(name: $0.key, value: $0.value) }
+
+        guard let percentEncodedQuery = components.percentEncodedQuery else {
+            return nil
+        }
+
+        return Data(percentEncodedQuery.utf8)
+    }
+
+    private static func authErrorResponse(code: String, message: String) -> ErrorResponse {
+        ErrorResponse(error: ErrorDetails(code: code, message: message))
+    }
+
+    private func updateTenantIdIfPossible(from accessToken: String) {
+        guard let tid = Self.jwtClaim("tid", from: accessToken), !tid.isEmpty else { return }
+        if settings.tenantId != tid {
+            DispatchQueue.main.async {
+                self.settings.tenantId = tid
+            }
+        }
+    }
+
+    private static func jwtClaim(_ key: String, from token: String) -> String? {
+        let segments = token.split(separator: ".")
+        guard segments.count >= 2 else { return nil }
+        var payload = String(segments[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let remainder = payload.count % 4
+        if remainder != 0 {
+            payload += String(repeating: "=", count: 4 - remainder)
+        }
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            return nil
+        }
+        return json[key] as? String
     }
 }
 

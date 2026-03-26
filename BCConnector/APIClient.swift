@@ -22,6 +22,21 @@ class APIClient: ObservableObject {
     private var baseURL: String {
         "https://api.businesscentral.dynamics.com/v2.0/\(settings.tenantId)/\(settings.environment)"
     }
+
+    // api root: either custom namespace (premium) or default v2.0
+    private var apiRoot: String {
+        if settings.useCustomNamespace,
+           !settings.apiPublisher.isEmpty,
+           !settings.apiGroup.isEmpty,
+           !settings.apiVersion.isEmpty {
+            return "api/\(settings.apiPublisher)/\(settings.apiGroup)/\(settings.apiVersion)"
+        }
+        return "api/v2.0"
+    }
+
+    func companiesPath(_ suffix: String) -> String {
+        return "\(apiRoot)/companies(\(settings.companyId))/\(suffix)"
+    }
     private let apiVersion = "v2.0"
 
     // MARK: - Discovery Helpers
@@ -78,14 +93,14 @@ class APIClient: ObservableObject {
 
     /// Fetches companies for the current tenant/environment using the standard BC endpoint.
     func fetchCompanies() async throws -> [Company] {
-        let response: BusinessCentralResponse<Company> = try await fetch("api/v2.0/companies")
+        let response: BusinessCentralResponse<Company> = try await fetch("\(apiRoot)/companies")
         return response.value
     }
     
     /// Fetch companies for a specific environment name without mutating SettingsManager.
     func fetchCompanies(inEnvironment environment: String) async throws -> [Company] {
         guard !settings.tenantId.isEmpty else { return [] }
-        let urlString = "https://api.businesscentral.dynamics.com/v2.0/\(settings.tenantId)/\(environment)/api/v2.0/companies"
+        let urlString = "https://api.businesscentral.dynamics.com/v2.0/\(settings.tenantId)/\(environment)/\(apiRoot)/companies"
         guard let url = URL(string: urlString) else { return [] }
         var request = URLRequest(url: url)
         let accessToken = try await authManager.getAccessToken()
@@ -106,7 +121,18 @@ class APIClient: ObservableObject {
         var items = response.value
         // Try to parse a nextLink if present in the raw response
         // We re-fetch the raw data to check for nextLink without creating a new model type
-        guard let url = URL(string: "\(baseURL)/\(endpoint)") else { return items }
+        let full = "\(baseURL)/\(endpoint)"
+        let url: URL
+        if let q = full.firstIndex(of: "?") {
+            let path = String(full[..<q])
+            let query = String(full[full.index(after: q)...])
+            let enc = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+            guard let u = URL(string: path + "?" + enc) else { return items }
+            url = u
+        } else {
+            guard let u = URL(string: full) else { return items }
+            url = u
+        }
         var request = URLRequest(url: url)
         let accessToken = try await authManager.getAccessToken()
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
@@ -122,8 +148,17 @@ class APIClient: ObservableObject {
     }
     
     func fetch<T: Decodable>(_ endpoint: String) async throws -> T {
-        guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
-            throw APIError.invalidURL
+        let full = "\(baseURL)/\(endpoint)"
+        let url: URL
+        if let q = full.firstIndex(of: "?") {
+            let path = String(full[..<q])
+            let query = String(full[full.index(after: q)...])
+            let enc = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+            guard let u = URL(string: path + "?" + enc) else { throw APIError.invalidURL }
+            url = u
+        } else {
+            guard let u = URL(string: full) else { throw APIError.invalidURL }
+            url = u
         }
         
         let accessToken = try await AuthenticationManager.shared.getAccessToken()
@@ -196,6 +231,87 @@ class APIClient: ObservableObject {
             throw APIError.networkError("Media request failed")
         }
         return data
+    }
+
+    // MARK: - POST helper (returns created resource)
+    func post<T: Decodable, Body: Encodable>(_ endpoint: String, body: Body) async throws -> T {
+        guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
+            throw APIError.invalidURL
+        }
+        let accessToken = try await AuthenticationManager.shared.getAccessToken()
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let bodyData = try JSONEncoder().encode(body)
+        request.httpBody = bodyData
+
+        if settings.networkLoggingEnabled {
+            print("[API] POST \(url.absoluteString)")
+            if settings.networkLogBodies, let bodyStr = String(data: bodyData, encoding: .utf8) {
+                print("[API] Body: \n\(bodyStr)")
+            }
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw APIError.httpError(status, try? decodeErrorResponse(from: data))
+        }
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+
+    // MARK: - PATCH helper
+    func patch<Body: Encodable>(_ endpoint: String, body: Body) async throws {
+        guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
+            throw APIError.invalidURL
+        }
+        let accessToken = try await AuthenticationManager.shared.getAccessToken()
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Allow unconditional update if ETag unknown
+        request.setValue("*", forHTTPHeaderField: "If-Match")
+        let data = try JSONEncoder().encode(body)
+        request.httpBody = data
+
+        if settings.networkLoggingEnabled {
+            print("[API] PATCH \(url.absoluteString)")
+            if settings.networkLogBodies, let bodyStr = String(data: data, encoding: .utf8) {
+                print("[API] Body: \n\(bodyStr)")
+            }
+        }
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw APIError.httpError(status, nil)
+        }
+    }
+
+    // MARK: - DELETE helper
+    func delete(_ endpoint: String) async throws {
+        guard let url = URL(string: "\(baseURL)/\(endpoint)") else {
+            throw APIError.invalidURL
+        }
+        let accessToken = try await AuthenticationManager.shared.getAccessToken()
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("*", forHTTPHeaderField: "If-Match")
+
+        if settings.networkLoggingEnabled {
+            print("[API] DELETE \(url.absoluteString)")
+        }
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw APIError.httpError(status, nil)
+        }
     }
 }
 

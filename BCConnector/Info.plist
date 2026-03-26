@@ -2,8 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
+    <key>CFBundleDisplayName</key>
+    <string>My Customers</string>
+    <key>CFBundleURLTypes</key>
+    <array>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -14,6 +16,10 @@
 				<string>ca.yann.bcconnector.auth</string>
 			</array>
 		</dict>
-	</array>
+    </array>
+    <key>NSContactsUsageDescription</key>
+    <string>Allow saving customer information to your Contacts.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Allow showing your location and directions to customers.</string>
 </dict>
 </plist>

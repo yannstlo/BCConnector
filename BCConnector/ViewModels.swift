@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 class CustomersViewModel: ObservableObject {
     @Published var customers: [Customer] = []
+    private var allCustomers: [Customer] = []
     
     @ObservedObject private var settings = SettingsManager.shared
     
@@ -11,9 +12,11 @@ class CustomersViewModel: ObservableObject {
 
     func fetchCustomers() async {
         do {
-            let path = "api/v2.0/companies(\(settings.companyId))/customers"
+            let path = APIClient.shared.companiesPath("customers")
             let response: BusinessCentralResponse<CustomerDTO> = try await APIClient.shared.fetch(path)
-            customers = response.value.map(Customer.init(dto:))
+            let mapped = response.value.map(Customer.init(dto:))
+            allCustomers = mapped
+            customers = mapped
             errorMessage = nil
         } catch let error as APIError {
             handleAPIError(error)
@@ -53,19 +56,35 @@ class CustomersViewModel: ObservableObject {
     func searchCustomers(query: String) async {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else {
-            await fetchCustomers()
+            // Restore to full list without re-fetch to keep UI snappy
+            customers = allCustomers
+            errorMessage = nil
             return
         }
         do {
             let esc = q.replacingOccurrences(of: "'", with: "''")
             // Search in displayName, number, city
             let filter = "$filter=contains(displayName,'\(esc)') or contains(number,'\(esc)') or contains(city,'\(esc)')"
-            let path = "api/v2.0/companies(\(settings.companyId))/customers?\(filter)&$top=50"
+            let path = APIClient.shared.companiesPath("customers?\(filter)&$top=50")
             let response: BusinessCentralResponse<CustomerDTO> = try await APIClient.shared.fetch(path)
             customers = response.value.map(Customer.init(dto:))
             errorMessage = nil
+        } catch let error as APIError {
+            handleAPIError(error)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = "Unexpected error: \(error.localizedDescription)"
+        }
+    }
+
+    // Instant local filter for better UX; remote search will refine results
+    func applyLocalFilter(query: String) {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { customers = allCustomers; return }
+        let lower = q.lowercased()
+        customers = allCustomers.filter { c in
+            c.displayNameOrName.lowercased().contains(lower) ||
+            c.no.lowercased().contains(lower) ||
+            c.city.lowercased().contains(lower)
         }
     }
 }
@@ -73,15 +92,18 @@ class CustomersViewModel: ObservableObject {
 @MainActor
 class VendorsViewModel: ObservableObject {
     @Published var vendors: [Vendor] = []
+    private var allVendors: [Vendor] = []
     @Published var errorMessage: String?
     
     @ObservedObject private var settings = SettingsManager.shared
 
     func fetchVendors() async {
         do {
-            let path = "api/v2.0/companies(\(settings.companyId))/vendors"
+            let path = APIClient.shared.companiesPath("vendors")
             let response: BusinessCentralResponse<VendorDTO> = try await APIClient.shared.fetch(path)
-            vendors = response.value.map(Vendor.init(dto:))
+            let mapped = response.value.map(Vendor.init(dto:))
+            allVendors = mapped
+            vendors = mapped
             errorMessage = nil
         } catch let error as APIError {
             handleAPIError(error)
@@ -121,18 +143,32 @@ class VendorsViewModel: ObservableObject {
     func searchVendors(query: String) async {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else {
-            await fetchVendors()
+            vendors = allVendors
+            errorMessage = nil
             return
         }
         do {
             let esc = q.replacingOccurrences(of: "'", with: "''")
-            let filter = "$filter=contains(displayName,'\(esc)') or contains(number,'\(esc)')"
-            let path = "api/v2.0/companies(\(settings.companyId))/vendors?\(filter)&$top=50"
+            let filter = "$filter=contains(displayName,'\(esc)') or contains(number,'\(esc)') or contains(city,'\(esc)')"
+            let path = APIClient.shared.companiesPath("vendors?\(filter)&$top=50")
             let response: BusinessCentralResponse<VendorDTO> = try await APIClient.shared.fetch(path)
             vendors = response.value.map(Vendor.init(dto:))
             errorMessage = nil
+        } catch let error as APIError {
+            handleAPIError(error)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = "Unexpected error: \(error.localizedDescription)"
+        }
+    }
+
+    func applyLocalFilter(query: String) {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { vendors = allVendors; return }
+        let lower = q.lowercased()
+        vendors = allVendors.filter { v in
+            v.name.lowercased().contains(lower) ||
+            v.no.lowercased().contains(lower) ||
+            v.city.lowercased().contains(lower)
         }
     }
 }
@@ -147,7 +183,7 @@ class OrdersViewModel: ObservableObject {
         do {
             let select = "$select=id,number,status,orderDate,totalAmountIncludingTax,totalAmountExcludingTax,customerName,fullyShipped"
             let orderBy = "$orderby=orderDate desc"
-            let path = "api/v2.0/companies(\(settings.companyId))/salesOrders?\(select)&\(orderBy)&$top=50"
+            let path = APIClient.shared.companiesPath("salesOrders?\(select)&\(orderBy)&$top=50")
             let dtos: [OrderDTO] = try await APIClient.shared.fetchPaged(path)
             orders = dtos
         } catch {
@@ -166,7 +202,7 @@ class OrdersViewModel: ObservableObject {
             let select = "$select=id,number,status,orderDate,totalAmountIncludingTax,totalAmountExcludingTax,customerName,fullyShipped"
             let filter = "$filter=contains(number,'\(esc)') or contains(customerName,'\(esc)') or contains(status,'\(esc)')"
             let orderBy = "$orderby=orderDate desc"
-            let path = "api/v2.0/companies(\(settings.companyId))/salesOrders?\(select)&\(filter)&\(orderBy)&$top=50"
+            let path = APIClient.shared.companiesPath("salesOrders?\(select)&\(filter)&\(orderBy)&$top=50")
             let dtos: [OrderDTO] = try await APIClient.shared.fetchPaged(path)
             orders = dtos
         } catch {
@@ -184,7 +220,7 @@ class ItemsSearchAdapter: ObservableObject {
         let esc = q.replacingOccurrences(of: "'", with: "''")
         let select = "$select=id,number,displayName"
         let filter = "$filter=contains(displayName,'\(esc)') or contains(number,'\(esc)')"
-        let path = "api/v2.0/companies(\(settings.companyId))/items?\(select)&\(filter)&$top=50"
+        let path = APIClient.shared.companiesPath("items?\(select)&\(filter)&$top=50")
         let resp: BusinessCentralResponse<ItemDTO> = try await APIClient.shared.fetch(path)
         return resp.value
     }
@@ -199,12 +235,85 @@ class ItemsViewModel: ObservableObject {
     func fetchItems() async {
         do {
             let select = "$select=id,number,displayName"
-            let path = "api/v2.0/companies(\(settings.companyId))/items?\(select)&$top=100"
+            let path = APIClient.shared.companiesPath("items?\(select)&$top=100")
             let resp: BusinessCentralResponse<ItemDTO> = try await APIClient.shared.fetch(path)
             items = resp.value
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+}
+
+@MainActor
+class CustomerContactsViewModel: ObservableObject {
+    @Published var contacts: [BCContactDTO] = []
+    @Published var errorMessage: String?
+    @ObservedObject private var settings = SettingsManager.shared
+
+    func fetch(for customer: Customer) async {
+        do {
+            // Step 1: fetch business relations for this company/customer number
+            let custNo = customer.no.replacingOccurrences(of: "'", with: "''")
+            var rels: [ContactBusinessRelationDTO] = []
+            if !custNo.isEmpty {
+                let relPath = APIClient.shared.companiesPath("contactBusinessRelations?$filter=companyNumber eq '\(custNo)' or customerNumber eq '\(custNo)'&$select=id,contactNumber,contactId")
+                let relResp: BusinessCentralResponse<ContactBusinessRelationDTO> = try await APIClient.shared.fetch(relPath)
+                rels = relResp.value
+            }
+
+            // Step 2: fetch contacts for those relation contact numbers
+            var contactsList: [BCContactDTO] = []
+            let numbers = Array(Set(rels.compactMap { $0.contactNumber })).filter { !$0.isEmpty }
+            if !numbers.isEmpty {
+                let filt = numbers.map { "contactNumber eq '\($0.replacingOccurrences(of: "'", with: "''"))'" }.joined(separator: " or ")
+                let path = APIClient.shared.companiesPath("contacts?$filter=\(filt)&$top=200")
+                let resp: BusinessCentralResponse<BCContactDTO> = try await APIClient.shared.fetch(path)
+                contactsList = resp.value
+            } else if custNo.isEmpty == false {
+                // Fallback: attempt to filter contacts by companyNumber when no relations found
+                let path = APIClient.shared.companiesPath("contacts?$filter=companyNumber eq '\(custNo)'&$top=50")
+                let resp: BusinessCentralResponse<BCContactDTO> = try await APIClient.shared.fetch(path)
+                contactsList = resp.value
+            }
+
+            await MainActor.run {
+                self.contacts = contactsList
+                self.errorMessage = nil
+            }
+
+            // Cache count for this customer
+            ContactCountCache.shared.setCount(contactsList.count, for: settings.companyId, customerNo: customer.no)
+        } catch {
+            await MainActor.run { self.errorMessage = error.localizedDescription }
+        }
+    }
+}
+
+// MARK: - Lightweight contact count cache
+final class ContactCountCache {
+    static let shared = ContactCountCache()
+    private init() {}
+    private let defaults = UserDefaults.standard
+    private let ttl: TimeInterval = 6 * 60 * 60 // 6 hours
+
+    private func key(_ companyId: String, _ customerNo: String) -> String { "contactCount::\(companyId)::\(customerNo)" }
+
+    func getCount(for companyId: String, customerNo: String) -> Int? {
+        let k = key(companyId, customerNo)
+        guard let entry = defaults.object(forKey: k) as? [String: Any],
+              let ts = entry["ts"] as? TimeInterval,
+              let value = entry["count"] as? Int else { return nil }
+        if Date().timeIntervalSince1970 - ts > ttl { return nil }
+        return value
+    }
+
+    func setCount(_ count: Int, for companyId: String, customerNo: String) {
+        let k = key(companyId, customerNo)
+        defaults.set(["ts": Date().timeIntervalSince1970, "count": count], forKey: k)
+    }
+
+    func invalidate(for companyId: String, customerNo: String) {
+        defaults.removeObject(forKey: key(companyId, customerNo))
     }
 }

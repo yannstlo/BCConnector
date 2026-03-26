@@ -50,6 +50,30 @@ struct ItemDetailDTO: Codable, Identifiable {
     let lastModifiedDateTime: String?
 }
 
+// Contacts (Business Central)
+struct BCContactDTO: Codable, Identifiable {
+    let id: String
+    let displayName: String?
+    let firstName: String?
+    let lastName: String?
+    let jobTitle: String?
+    let phoneNumber: String?
+    let mobilePhoneNumber: String?
+    let email: String?
+    let companyName: String?
+    let companyNumber: String?
+}
+
+// Link between contacts and companies/customers in BC
+struct ContactBusinessRelationDTO: Codable, Identifiable {
+    let id: String
+    let contactId: String?
+    let contactNumber: String?
+    let companyNumber: String?
+    let customerNumber: String?
+    let type: String?
+}
+
 extension Customer {
     init(dto: CustomerDTO) {
         self.init(
@@ -66,7 +90,9 @@ extension Customer {
             paymentTermsCode: dto.paymentTermsId ?? "",
             salespersonCode: dto.salespersonCode ?? "",
             customerPostingGroup: "",
-            genBusPostingGroup: ""
+            genBusPostingGroup: "",
+            phoneNumber: dto.phoneNumber,
+            email: dto.email
         )
     }
 }

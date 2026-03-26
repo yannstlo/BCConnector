@@ -2,6 +2,7 @@ import SwiftUI
 import AuthenticationServices
 import Foundation
 import UIKit
+import Contacts
 
 struct ContentView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
@@ -10,100 +11,113 @@ struct ContentView: View {
     @State private var authContextProvider: AuthContextProvider?
     @State private var selectedTab = 0
     @State private var isShowingWorkspaceSelection = false
+    @State private var isShowingSearch = false
     @State private var authSession: ASWebAuthenticationSession?
+    @State private var authErrorMessage: String?
+    @State private var setupClientId: String = ""
     @ObservedObject private var toast = ToastManager.shared
     
     var body: some View {
         Group {
             if authManager.isAuthenticated {
-                // Your main app content
-                VStack(spacing: 0) {
-                    if settingsManager.environment.isEmpty || settingsManager.companyId.isEmpty {
-                        HStack(alignment: .top) {
-                            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.yellow)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Complete setup").font(.headline)
-                                Text("Select your environment and company to begin.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Button("Select") {
-                                isShowingWorkspaceSelection = true
-                            }
-                        }
-                        .padding()
-                        .background(Color.yellow.opacity(0.15))
-                    }
+                TabView(selection: $selectedTab) {
+                    CustomersRootView(
+                        isShowingWorkspaceSelection: $isShowingWorkspaceSelection,
+                        isShowingSearch: $isShowingSearch
+                    )
+                        .tabItem { Label("Customers", systemImage: "person.3") }
+                        .tag(0)
 
-                    TabView(selection: $selectedTab) {
-                        CustomersView()
-                            .tabItem {
-                                Label("Customers", systemImage: "person.3")
-                            }
-                            .tag(0)
-                        VendorsView()
-                            .tabItem {
-                                Label("Vendors", systemImage: "building.2")
-                            }
-                            .tag(1)
-                        ItemsView()
-                            .tabItem {
-                                Label("Items", systemImage: "shippingbox")
-                            }
-                            .tag(2)
-                        OrdersView()
-                            .tabItem {
-                                Label("Orders", systemImage: "list.clipboard")
-                            }
-                            .tag(3)
+                    VendorsRootView(
+                        isShowingWorkspaceSelection: $isShowingWorkspaceSelection,
+                        isShowingSearch: $isShowingSearch
+                    )
+                        .tabItem { Label("Vendors", systemImage: "building.2") }
+                        .tag(1)
+
+                    NavigationView {
                         SettingsView(settings: settingsManager)
-                            .tabItem {
-                                Label("Settings", systemImage: "gear")
-                            }
-                            .tag(4)
-                    }
-                    .toolbar {
-                        ToolbarItem(placement: .principal) {
-                            Text("BCConnector")
-                                .font(.headline)
-                        }
-                    }
-                    .onAppear {
-                        // Set the initial tab to Customers when authenticated
-                        selectedTab = 0
-                        isShowingWorkspaceSelection = settingsManager.environment.isEmpty || settingsManager.companyId.isEmpty
-                    }
-                    .sheet(isPresented: $isShowingWorkspaceSelection) {
-                        EnvironmentCompanySelectionView()
                             .environmentObject(authManager)
-                            .environmentObject(settingsManager)
+                    }
+                    .tabItem { Label("Settings", systemImage: "gearshape") }
+                    .tag(2)
+                }
+                .onAppear {
+                    if !(0...2).contains(selectedTab) {
+                        selectedTab = 0
+                    }
+                    isShowingWorkspaceSelection = settingsManager.environment.isEmpty || settingsManager.companyId.isEmpty
+                }
+                .sheet(isPresented: $isShowingWorkspaceSelection) {
+                    EnvironmentCompanySelectionView()
+                        .environmentObject(authManager)
+                        .environmentObject(settingsManager)
+                }
+                .sheet(isPresented: $isShowingSearch) {
+                    NavigationView {
+                        SearchHomeView(isShowingWorkspaceSelection: $isShowingWorkspaceSelection)
                     }
                 }
             } else {
-                VStack {
-                    Text("Welcome to BCConnector")
-                    Button("Log In") {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Connect Microsoft 365")
+                        .font(.largeTitle.weight(.semibold))
+                    Text("Enter your Azure Application Client ID to begin sign-in. Tenant, company, and environment will be discovered after login.")
+                        .foregroundColor(.secondary)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Application Client ID")
+                            .font(.headline)
+                        TextField("00000000-0000-0000-0000-000000000000", text: $setupClientId)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.secondarySystemBackground))
+                            )
+                    }
+
+                    Button("Continue to Microsoft Sign-In") {
+                        settingsManager.clientId = setupClientId.trimmingCharacters(in: .whitespacesAndNewlines)
                         if let url = authManager.startAuthentication() {
                             startAuthSession(url: url)
                         }
                     }
-                    Button("Settings") {
+                    .buttonStyle(.borderedProminent)
+                    .disabled(setupClientId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    Button("Advanced Settings") {
                         isShowingSettings = true
                     }
+                    .buttonStyle(.bordered)
+
+                    Spacer()
                 }
+                .padding(24)
                 .sheet(isPresented: $isShowingSettings) {
-                    SettingsView(settings: settingsManager)
+                    NavigationView {
+                        SettingsView(settings: settingsManager)
+                            .environmentObject(authManager)
+                    }
                 }
             }
         }
-        .onChange(of: authManager.isAuthenticated) { _, newValue in
+        .onChange(of: authManager.isAuthenticated) { newValue in
             if newValue {
                 selectedTab = 0
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowWorkspaceSelection"))) { _ in
             isShowingWorkspaceSelection = true
+        }
+        .alert("Authentication Error", isPresented: Binding(
+            get: { authErrorMessage != nil },
+            set: { if !$0 { authErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { authErrorMessage = nil }
+        } message: {
+            Text(authErrorMessage ?? "Authentication failed.")
         }
         .overlay(alignment: .top) {
             if let message = toast.message {
@@ -113,21 +127,31 @@ struct ContentView: View {
                     .zIndex(1000)
             }
         }
+        .onAppear {
+            setupClientId = settingsManager.clientId
+        }
     }
     
     private func startAuthSession(url: URL) {
         authContextProvider = AuthContextProvider()
+        let callbackScheme = URL(string: settingsManager.redirectUri)?.scheme ?? "ca.yann.bcconnector.auth"
         authSession = ASWebAuthenticationSession(
             url: url,
-            callbackURLScheme: "ca.yann.bcconnector.auth"
+            callbackURLScheme: callbackScheme
         ) { callbackURL, error in
             if let error = error {
+                if let authError = error as? ASWebAuthenticationSessionError,
+                   authError.code == .canceledLogin {
+                    return
+                }
                 print("Authentication error: \(error.localizedDescription)")
+                showAuthError(message: error.localizedDescription)
                 return
             }
             
             guard let callbackURL = callbackURL else {
                 print("No callback URL received")
+                showAuthError(message: "No authentication callback URL was returned.")
                 return
             }
             
@@ -136,73 +160,288 @@ struct ContentView: View {
                     try await authManager.handleRedirect(url: callbackURL)
                 } catch {
                     print("Error handling redirect: \(error)")
+                    showAuthError(message: authErrorMessage(from: error))
                 }
             }
         }
         
         authSession?.presentationContextProvider = authContextProvider
-        authSession?.prefersEphemeralWebBrowserSession = true
-        authSession?.start()
+        authSession?.prefersEphemeralWebBrowserSession = false
+        let didStart = authSession?.start() ?? false
+        if !didStart {
+            showAuthError(message: "Unable to start the Microsoft sign-in session.")
+        }
+    }
+
+    private func showAuthError(message: String) {
+        DispatchQueue.main.async {
+            authErrorMessage = message
+        }
+    }
+
+    private func authErrorMessage(from error: Error) -> String {
+        if let apiError = error as? APIError,
+           case let .authenticationError(response) = apiError,
+           let message = response?.error.message,
+           !message.isEmpty {
+            return message
+        }
+
+        return error.localizedDescription
+    }
+}
+
+private struct WorkspaceSetupBanner: View {
+    @ObservedObject private var settings = SettingsManager.shared
+    @Binding var isShowingWorkspaceSelection: Bool
+
+    var body: some View {
+        if settings.environment.isEmpty || settings.companyId.isEmpty {
+            HStack(alignment: .top) {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.yellow)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Complete setup").font(.headline)
+                    Text("Select your environment and company to begin.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Button("Select") { isShowingWorkspaceSelection = true }
+            }
+            .padding()
+            .background(Color.yellow.opacity(0.15))
+        }
+    }
+}
+
+private struct SearchHomeView: View {
+    @Binding var isShowingWorkspaceSelection: Bool
+    @State private var searchMode = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            WorkspaceSetupBanner(isShowingWorkspaceSelection: $isShowingWorkspaceSelection)
+            Picker("Search", selection: $searchMode) {
+                Text("Customers").tag(0)
+                Text("Vendors").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .padding()
+
+            if searchMode == 0 {
+                CustomersView()
+            } else {
+                VendorsView()
+            }
+        }
+        .navigationTitle("Search")
+    }
+}
+
+private struct CustomersRootView: View {
+    @Binding var isShowingWorkspaceSelection: Bool
+    @Binding var isShowingSearch: Bool
+    @State private var isShowingCreateCustomer = false
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                WorkspaceSetupBanner(isShowingWorkspaceSelection: $isShowingWorkspaceSelection)
+                CustomersView()
+            }
+            .navigationTitle("My Customers")
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button { isShowingSearch = true } label: { Image(systemName: "magnifyingglass") }
+                    Button { isShowingCreateCustomer = true } label: { Image(systemName: "plus") }
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingCreateCustomer) {
+            CreateCustomerSheet()
+        }
+    }
+}
+
+private struct VendorsRootView: View {
+    @Binding var isShowingWorkspaceSelection: Bool
+    @Binding var isShowingSearch: Bool
+    @State private var isShowingCreateVendor = false
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                WorkspaceSetupBanner(isShowingWorkspaceSelection: $isShowingWorkspaceSelection)
+                VendorsView()
+            }
+            .navigationTitle("My Vendors")
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button { isShowingSearch = true } label: { Image(systemName: "magnifyingglass") }
+                    Button { isShowingCreateVendor = true } label: { Image(systemName: "plus") }
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingCreateVendor) {
+            CreateVendorSheet()
+        }
     }
 }
 
 struct CustomerDetailView: View {
-    let customer: Customer
+    @State private var customer: Customer
     @State private var isShowingMap = false
+    @Environment(\.openURL) private var openURL
+    @State private var savingContact = false
+    @State private var saveResultMessage: String?
+    @State private var isEditing = false
+    @State private var editPhone: String = ""
+    @State private var editEmail: String = ""
+    @State private var editAddress: String = ""
+    @State private var editCity: String = ""
+    @State private var editState: String = ""
+    @State private var editPostal: String = ""
+    @State private var editCountry: String = ""
     
-    var body: some View {
-        Form {
-            HStack {
-                InitialsIcon(name: customer.displayNameOrName, color: .orange)
-                VStack(alignment: .leading) {
-                    Text(customer.displayNameOrName)
-                        .font(.headline)
-                    Text(customer.no)
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-            }
-            
-            Section(header: Text("Address")) {
-                Button(action: {
-                    isShowingMap = true
-                }) {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Address: \(customer.address)")
-                            Text("City: \(customer.city)")
-                            Text("State: \(customer.county)")
-                            Text("Post Code: \(customer.postCode)")
-                            Text("Country: \(customer.countryRegionCode)")
-                        }
-                        Spacer()
-                        Image(systemName: "map")
-                            .foregroundColor(.blue)
-                    }
-                }
-                .foregroundColor(.primary)
-            }
-            
-            Section(header: Text("Financial Information")) {
-                Text("Balance: \(formatCurrency(customer.balance))")
-                Text("Credit Limit: \(formatCurrency(customer.creditLimitLCY))")
-                Text("Payment Terms: \(customer.paymentTermsCode)")
-            }
-            
-            Section(header: Text("Sales Information")) {
-                Text("Salesperson: \(customer.salespersonCode)")
-                Text("Customer Posting Group: \(customer.customerPostingGroup)")
-                Text("Gen. Bus. Posting Group: \(customer.genBusPostingGroup)")
-            }
+    init(customer: Customer) {
+        self._customer = State(initialValue: customer)
+    }
 
-            Section(header: Text("Orders")) {
-                CustomerOrdersList(customerId: customer.bcId, customerNumber: customer.no)
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                // Header
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.orange.opacity(0.2))
+                            .frame(width: 96, height: 96)
+                        Text(initials(from: customer.displayNameOrName))
+                            .font(.system(size: 36, weight: .semibold))
+                            .foregroundColor(.orange)
+                    }
+                    Text(customer.displayNameOrName)
+                        .font(.system(size: 28, weight: .bold))
+                    Text(customer.no)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                // Quick actions
+                HStack(spacing: 24) {
+                    ContactActionButton(title: "Call", systemImage: "phone.fill") { call() }
+                    ContactActionButton(title: "Text", systemImage: "message.fill") { text() }
+                    ContactActionButton(title: "Email", systemImage: "envelope.fill") { email() }
+                    ContactActionButton(title: "Map", systemImage: "map.fill") { isShowingMap = true }
+                }
+
+                // Details
+                VStack(spacing: 8) {
+                    if isEditing {
+                        EditableRow(label: "Phone") {
+                            TextField("Phone", text: $editPhone)
+                                .keyboardType(.phonePad)
+                                .textContentType(.telephoneNumber)
+                        }
+                        EditableRow(label: "Email") {
+                            TextField("Email", text: $editEmail)
+                                .keyboardType(.emailAddress)
+                                .textContentType(.emailAddress)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                        }
+                        EditableRow(label: "Address") {
+                            VStack(spacing: 10) {
+                                TextField("Street address", text: $editAddress)
+                                HStack {
+                                    TextField("City", text: $editCity)
+                                    TextField("State/Province", text: $editState)
+                                }
+                                HStack {
+                                    TextField("Postal Code", text: $editPostal)
+                                    TextField("Country", text: $editCountry)
+                                }
+                            }
+                        }
+                    } else {
+                        ContactRow(label: "Phone", value: primaryPhone(), action: call)
+                        ContactRow(label: "Email", value: primaryEmail(), action: email)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Address").font(.headline)
+                        Button(action: { isShowingMap = true }) {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "mappin.and.ellipse").foregroundColor(.blue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(customer.address).lineLimit(2)
+                                    Text("\(customer.city), \(customer.county) \(customer.postCode)")
+                                    Text(customer.countryRegionCode)
+                                }.foregroundColor(.primary)
+                                Spacer()
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+                }
+
+                // Save to contacts
+                Button(action: { Task { await saveToContacts() } }) {
+                    HStack {
+                        if savingContact { ProgressView().progressViewStyle(.circular).padding(.trailing, 6) }
+                        Image(systemName: "person.crop.circle.badge.plus")
+                        Text("Add to Contacts")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+
+                if let msg = saveResultMessage {
+                    Text(msg).font(.footnote).foregroundColor(.secondary)
+                }
+
+                // Customer Contacts (Premium)
+                if SettingsManager.shared.useCustomNamespace {
+                    NavigationLink(destination: CustomerContactsListView(customer: customer)) {
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                            if let count = contactCount {
+                                Text(count == 0 ? "No Contacts" : "Contacts (\(count))")
+                            } else {
+                                Text("Contacts")
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+                    }
+                } else {
+                    PremiumContactsUpsellView()
+                }
             }
+            .padding()
         }
         .navigationTitle(customer.displayNameOrName)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if isEditing {
+                    Button("Save") { Task { await saveEdits() } }
+                } else {
+                    Button("Edit") { enterEdit() }
+                }
+            }
+            ToolbarItem(placement: .navigationBarLeading) {
+                if isEditing {
+                    Button("Cancel") { cancelEdit() }
+                }
+            }
+        }
         .sheet(isPresented: $isShowingMap) {
             MapView(address: "\(customer.address), \(customer.city), \(customer.county) \(customer.postCode), \(customer.countryRegionCode)")
         }
+        .task { await loadContactCount() }
     }
     
     private func formatCurrency(_ amount: Double) -> String {
@@ -211,10 +450,496 @@ struct CustomerDetailView: View {
         formatter.currencyCode = "USD"
         return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
     }
+
+    private func initials(from name: String) -> String {
+        let parts = name.split(separator: " ")
+        let first = parts.first?.prefix(1) ?? "?"
+        let last = parts.dropFirst().first?.prefix(1)
+        return String(first) + (last.map(String.init) ?? "")
+    }
+
+    // Placeholders for potential future phone/email fields from BC
+    @State private var contactCount: Int? = nil
+
+    private func cleaned(_ s: String?) -> String? {
+        guard let t = s?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return nil }
+        return t
+    }
+    private func primaryPhone() -> String? { cleaned(isEditing ? editPhone : customer.phoneNumber) }
+    private func primaryEmail() -> String? { cleaned(isEditing ? editEmail : customer.email) }
+
+    private func call() {
+        guard let number = primaryPhone(), let url = URL(string: "tel://\(number.filter("0123456789+".contains))") else { return }
+        if UIApplication.shared.canOpenURL(url) { openURL(url) }
+        else { saveResultMessage = "Calling not supported on this device" }
+    }
+    private func text() {
+        guard let number = primaryPhone(), let url = URL(string: "sms:\(number.filter("0123456789+".contains))") else { return }
+        if UIApplication.shared.canOpenURL(url) { openURL(url) }
+        else { saveResultMessage = "Texting not supported on this device" }
+    }
+    private func email() {
+        guard let addr = primaryEmail(), let url = URL(string: "mailto:\(addr)") else { return }
+        if UIApplication.shared.canOpenURL(url) { openURL(url) }
+        else { saveResultMessage = "Email app not available on this device" }
+    }
+
+    private func makeCNContact() -> CNMutableContact {
+        let c = CNMutableContact()
+        let comps = customer.displayNameOrName.split(separator: " ")
+        if comps.count > 1 {
+            c.givenName = String(comps.first!)
+            c.familyName = comps.dropFirst().joined(separator: " ")
+        } else {
+            c.givenName = customer.displayNameOrName
+        }
+        if let phone = primaryPhone() {
+            c.phoneNumbers = [CNLabeledValue(label: CNLabelPhoneNumberMain, value: CNPhoneNumber(stringValue: phone))]
+        }
+        if let email = primaryEmail() {
+            c.emailAddresses = [CNLabeledValue(label: CNLabelWork, value: email as NSString)]
+        }
+        let addr = CNMutablePostalAddress()
+        addr.street = customer.address
+        addr.city = customer.city
+        addr.state = customer.county
+        addr.postalCode = customer.postCode
+        addr.country = customer.countryRegionCode
+        c.postalAddresses = [CNLabeledValue(label: CNLabelWork, value: addr)]
+        return c
+    }
+
+    private func requestContactsAccessIfNeeded(store: CNContactStore) async throws {
+        let status = CNContactStore.authorizationStatus(for: .contacts)
+        switch status {
+        case .authorized:
+            return
+        case .notDetermined:
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                store.requestAccess(for: .contacts) { granted, error in
+                    if let error = error { cont.resume(throwing: error); return }
+                    if granted { cont.resume() } else { cont.resume(throwing: NSError(domain: "Contacts", code: 1, userInfo: [NSLocalizedDescriptionKey: "Access to Contacts denied"])) }
+                }
+            }
+        default:
+            throw NSError(domain: "Contacts", code: 1, userInfo: [NSLocalizedDescriptionKey: "Access to Contacts denied in Settings"])
+        }
+    }
+
+    private func saveToContacts() async {
+        savingContact = true
+        defer { savingContact = false }
+        do {
+            let store = CNContactStore()
+            try await requestContactsAccessIfNeeded(store: store)
+            let contact = makeCNContact()
+            let saveReq = CNSaveRequest()
+            saveReq.add(contact, toContainerWithIdentifier: nil)
+            try store.execute(saveReq)
+            await MainActor.run { saveResultMessage = "Saved to Contacts" }
+        } catch {
+            await MainActor.run { saveResultMessage = error.localizedDescription }
+        }
+    }
+
+    private func enterEdit() {
+        isEditing = true
+        editPhone = customer.phoneNumber ?? ""
+        editEmail = customer.email ?? ""
+        editAddress = customer.address
+        editCity = customer.city
+        editState = customer.county
+        editPostal = customer.postCode
+        editCountry = customer.countryRegionCode
+    }
+    private func cancelEdit() {
+        isEditing = false
+    }
+    private struct CustomerPatch: Encodable {
+        let phoneNumber: String?
+        let email: String?
+        let addressLine1: String?
+        let city: String?
+        let state: String?
+        let postalCode: String?
+        let country: String?
+    }
+    private func saveEdits() async {
+        let phone = editPhone.trimmingCharacters(in: .whitespacesAndNewlines)
+        let email = editEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let address = editAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        let city = editCity.trimmingCharacters(in: .whitespacesAndNewlines)
+        let state = editState.trimmingCharacters(in: .whitespacesAndNewlines)
+        let postal = editPostal.trimmingCharacters(in: .whitespacesAndNewlines)
+        let country = editCountry.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let endpoint = APIClient.shared.companiesPath("customers(\(customer.bcId))")
+            try await APIClient.shared.patch(endpoint, body: CustomerPatch(
+                phoneNumber: phone.isEmpty ? nil : phone,
+                email: email.isEmpty ? nil : email,
+                addressLine1: address.nilIfBlank,
+                city: city.nilIfBlank,
+                state: state.nilIfBlank,
+                postalCode: postal.nilIfBlank,
+                country: country.nilIfBlank
+            ))
+            await MainActor.run {
+                // Reflect the updates immediately in the UI
+                customer.phoneNumber = phone.isEmpty ? nil : phone
+                customer.email = email.isEmpty ? nil : email
+                if !address.isEmpty { customer.address = address }
+                if !city.isEmpty { customer.city = city }
+                if !state.isEmpty { customer.county = state }
+                if !postal.isEmpty { customer.postCode = postal }
+                if !country.isEmpty { customer.countryRegionCode = country }
+                isEditing = false
+                saveResultMessage = "Updated customer"
+            }
+        } catch {
+            await MainActor.run { saveResultMessage = error.localizedDescription }
+        }
+    }
+
+    // Lazy load contact count with caching
+    private func loadContactCount() async {
+        guard SettingsManager.shared.useCustomNamespace else { return }
+        let companyId = SettingsManager.shared.companyId
+        if let cached = ContactCountCache.shared.getCount(for: companyId, customerNo: customer.no) {
+            await MainActor.run { contactCount = cached }
+            return
+        }
+        do {
+            // Fetch only the relations and use their count
+            let custNo = customer.no.replacingOccurrences(of: "'", with: "''")
+            let path = APIClient.shared.companiesPath("contactBusinessRelations?$filter=companyNumber eq '\(custNo)' or customerNumber eq '\(custNo)'&$select=id,contactNumber")
+            let rels: BusinessCentralResponse<ContactBusinessRelationDTO> = try await APIClient.shared.fetch(path)
+            let cnt = rels.value.count
+            ContactCountCache.shared.setCount(cnt, for: companyId, customerNo: customer.no)
+            await MainActor.run { contactCount = cnt }
+        } catch {
+            // Ignore count errors; we can still navigate to contacts
+        }
+    }
+}
+
+// Contact card components
+private struct ContactActionButton: View {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(Color(.secondarySystemBackground)))
+                Text(title).font(.caption)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct ContactRow: View {
+    let label: String
+    let value: String?
+    let action: () -> Void
+    var body: some View {
+        Button(action: { if value != nil { action() } }) {
+            HStack {
+                Text(label)
+                Spacer()
+                Text(value ?? "—")
+                    .foregroundColor(value == nil ? .secondary : .blue)
+            }
+            .padding()
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct PremiumContactsUpsellView: View {
+    @Environment(\.openURL) private var openURL
+    @ObservedObject private var settings = SettingsManager.shared
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "lock.fill").foregroundColor(.orange)
+                Text("Contacts (Premium)").font(.headline)
+                Spacer()
+            }
+            Text("Requires the Business Central extension for My Customers.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            HStack {
+                Button {
+                    if let url = URL(string: settings.premiumExtensionURL), !settings.premiumExtensionURL.isEmpty {
+                        openURL(url)
+                    }
+                } label: {
+                    Label("Get Extension on GitHub", systemImage: "link.circle")
+                }
+                .buttonStyle(.bordered)
+                .tint(.blue)
+                .disabled(settings.premiumExtensionURL.isEmpty)
+                Spacer()
+            }
+        }
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+    }
+}
+
+private struct EditableRow<Content: View>: View {
+    let label: String
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label).font(.subheadline).foregroundColor(.secondary)
+            content()
+                .padding(12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(.secondarySystemBackground)))
+        }
+        .padding(.horizontal, 2)
+    }
+}
+
+// BC Contacts list for a customer
+struct CustomerContactsListView: View {
+    let customer: Customer
+    @StateObject private var vm = CustomerContactsViewModel()
+    @State private var searchText = ""
+    @State private var refreshToken = false
+    @State private var showingAdd = false
+    @State private var editingContact: BCContactDTO?
+    var filtered: [BCContactDTO] {
+        guard !searchText.isEmpty else { return vm.contacts }
+        let q = searchText.lowercased()
+        return vm.contacts.filter { ($0.displayName ?? "").lowercased().contains(q) || ($0.email ?? "").lowercased().contains(q) }
+    }
+    var body: some View {
+        Group {
+            if !filtered.isEmpty {
+                List(filtered) { c in
+                    NavigationLink {
+                        ContactEditView(customer: customer, contact: c) { _ in
+                            ContactCountCache.shared.invalidate(for: SettingsManager.shared.companyId, customerNo: customer.no)
+                            refreshToken.toggle()
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(c.displayName ?? "—").font(.headline)
+                            HStack(spacing: 12) {
+                                if let phone = c.phoneNumber ?? c.mobilePhoneNumber { Text(phone).foregroundColor(.secondary) }
+                                if let email = c.email { Text(email).foregroundColor(.secondary) }
+                            }
+                        }
+                    }
+                    .contextMenu {
+                        if let phone = c.phoneNumber ?? c.mobilePhoneNumber, let url = URL(string: "tel://\(phone)") { Link("Call", destination: url) }
+                        if let phone = c.phoneNumber ?? c.mobilePhoneNumber, let url = URL(string: "sms:\(phone)") { Link("Text", destination: url) }
+                        if let email = c.email, let url = URL(string: "mailto:\(email)") { Link("Email", destination: url) }
+                    }
+                }
+                .listStyle(.plain)
+            } else if let msg = vm.errorMessage {
+                Text(msg).foregroundColor(.red).padding()
+            } else if vm.contacts.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "person.2").font(.largeTitle).foregroundColor(.secondary)
+                    Text("No contacts").font(.headline)
+                    Text("Pull to refresh to check again.").font(.subheadline).foregroundColor(.secondary)
+                }
+                .padding()
+            } else {
+                ProgressView("Loading contacts…")
+            }
+        }
+        .navigationTitle("Contacts")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showingAdd = true }) { Image(systemName: "plus") }
+            }
+        }
+        .searchable(text: $searchText, prompt: "Search contacts")
+        .task(id: refreshToken) { await vm.fetch(for: customer) }
+        .refreshable {
+            ContactCountCache.shared.invalidate(for: SettingsManager.shared.companyId, customerNo: customer.no)
+            refreshToken.toggle()
+        }
+        .sheet(isPresented: $showingAdd) {
+            NavigationView {
+                ContactEditView(customer: customer, contact: nil) { _ in
+                    ContactCountCache.shared.invalidate(for: SettingsManager.shared.companyId, customerNo: customer.no)
+                    refreshToken.toggle()
+                    showingAdd = false
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Utilities
+private extension String {
+    var nilIfBlank: String? {
+        let t = trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? nil : t
+    }
+}
+
+// Create/Edit contact view
+struct ContactEditView: View {
+    let customer: Customer
+    var contact: BCContactDTO?
+    var onSaved: (BCContactDTO) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var firstName: String = ""
+    @State private var lastName: String = ""
+    @State private var displayName: String = ""
+    @State private var jobTitle: String = ""
+    @State private var phone: String = ""
+    @State private var mobile: String = ""
+    @State private var email: String = ""
+    @State private var saving = false
+    @State private var errorMessage: String?
+
+    var isEditing: Bool { contact != nil }
+
+    var body: some View {
+        Form {
+            Section(header: Text("Name")) {
+                TextField("First name", text: $firstName)
+                TextField("Last name", text: $lastName)
+                TextField("Display name", text: $displayName)
+            }
+            Section(header: Text("Details")) {
+                TextField("Job title", text: $jobTitle)
+                TextField("Phone", text: $phone).keyboardType(.phonePad)
+                TextField("Mobile", text: $mobile).keyboardType(.phonePad)
+                TextField("Email", text: $email).keyboardType(.emailAddress).autocapitalization(.none).disableAutocorrection(true)
+            }
+            if let err = errorMessage { Text(err).foregroundColor(.red) }
+        }
+        .navigationTitle(isEditing ? "Edit Contact" : "New Contact")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Cancel") { dismiss() }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(isEditing ? "Save" : "Create") { Task { await save() } }
+                    .disabled(saving)
+            }
+        }
+        .onAppear { populate() }
+    }
+
+    private func populate() {
+        guard let c = contact else { return }
+        firstName = c.firstName ?? ""
+        lastName = c.lastName ?? ""
+        displayName = c.displayName ?? ""
+        jobTitle = c.jobTitle ?? ""
+        phone = c.phoneNumber ?? ""
+        mobile = c.mobilePhoneNumber ?? ""
+        email = c.email ?? ""
+    }
+
+    private struct ContactCreateBody: Encodable {
+        let displayName: String?
+        let firstName: String?
+        let lastName: String?
+        let jobTitle: String?
+        let phoneNumber: String?
+        let mobilePhoneNumber: String?
+        let email: String?
+        let companyNumber: String?
+    }
+    private struct ContactPatchBody: Encodable {
+        let displayName: String?
+        let firstName: String?
+        let lastName: String?
+        let jobTitle: String?
+        let phoneNumber: String?
+        let mobilePhoneNumber: String?
+        let email: String?
+    }
+
+    private func save() async {
+        saving = true
+        defer { saving = false }
+        do {
+            let companyId = SettingsManager.shared.companyId
+            if let contact = contact {
+                let endpoint = APIClient.shared.companiesPath("contacts(\(contact.id))")
+                let body = ContactPatchBody(
+                    displayName: displayName.nilIfBlank,
+                    firstName: firstName.nilIfBlank,
+                    lastName: lastName.nilIfBlank,
+                    jobTitle: jobTitle.nilIfBlank,
+                    phoneNumber: phone.nilIfBlank,
+                    mobilePhoneNumber: mobile.nilIfBlank,
+                    email: email.nilIfBlank
+                )
+                try await APIClient.shared.patch(endpoint, body: body)
+                let updated = BCContactDTO(id: contact.id, displayName: displayName.nilIfBlank ?? contact.displayName, firstName: firstName.nilIfBlank ?? contact.firstName, lastName: lastName.nilIfBlank ?? contact.lastName, jobTitle: jobTitle.nilIfBlank ?? contact.jobTitle, phoneNumber: phone.nilIfBlank ?? contact.phoneNumber, mobilePhoneNumber: mobile.nilIfBlank ?? contact.mobilePhoneNumber, email: email.nilIfBlank ?? contact.email, companyName: contact.companyName, companyNumber: contact.companyNumber)
+                await MainActor.run { onSaved(updated); dismiss() }
+            } else {
+                let endpoint = APIClient.shared.companiesPath("contacts")
+                let body = ContactCreateBody(
+                    displayName: displayName.nilIfBlank ?? [firstName, lastName].filter { !$0.isEmpty }.joined(separator: " "),
+                    firstName: firstName.nilIfBlank,
+                    lastName: lastName.nilIfBlank,
+                    jobTitle: jobTitle.nilIfBlank,
+                    phoneNumber: phone.nilIfBlank,
+                    mobilePhoneNumber: mobile.nilIfBlank,
+                    email: email.nilIfBlank,
+                    companyNumber: customer.no
+                )
+                let created: BCContactDTO = try await APIClient.shared.post(endpoint, body: body)
+                await MainActor.run { onSaved(created); dismiss() }
+            }
+        } catch {
+            // Retry decode directly to BCContactDTO if wrapper path failed
+            do {
+                let companyId = SettingsManager.shared.companyId
+                let endpoint = APIClient.shared.companiesPath("contacts")
+                if contact == nil {
+                    let body = ContactCreateBody(
+                        displayName: displayName.nilIfBlank ?? [firstName, lastName].filter { !$0.isEmpty }.joined(separator: " "),
+                        firstName: firstName.nilIfBlank,
+                        lastName: lastName.nilIfBlank,
+                        jobTitle: jobTitle.nilIfBlank,
+                        phoneNumber: phone.nilIfBlank,
+                        mobilePhoneNumber: mobile.nilIfBlank,
+                        email: email.nilIfBlank,
+                        companyNumber: customer.no
+                    )
+                    let created: BCContactDTO = try await APIClient.shared.post(endpoint, body: body)
+                    await MainActor.run { onSaved(created); dismiss() }
+                    return
+                }
+                throw error
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
+    }
 }
 
 class AuthContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        let windowScenes = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+        let windows = windowScenes.flatMap { $0.windows }
+        if let window = windows.first(where: { $0.isKeyWindow }) ?? windows.first {
+            return window
+        }
+        if let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? UIApplication.shared.windows.first {
+            return window
+        }
         return ASPresentationAnchor()
     }
 }
@@ -258,7 +983,6 @@ struct SettingsView: View {
     }
     
     var body: some View {
-        NavigationView {
         Form {
             Section(header: Text("Business Central Settings")) {
                 HStack {
@@ -323,6 +1047,8 @@ struct SettingsView: View {
             
             Section(header: Text("Advanced")) {
                 DisclosureGroup(isExpanded: $showAdvanced) {
+                    Toggle("Use custom namespace (Premium)", isOn: $settings.useCustomNamespace)
+                        .tint(.blue)
                     HStack {
                         Text("API Publisher")
                         Spacer()
@@ -347,6 +1073,9 @@ struct SettingsView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
                     }
+                    Button("Auto‑detect Namespace") { Task { await detectNamespace() } }
+                        .buttonStyle(.bordered)
+                        .tint(.blue)
                 } label: {
                     Text("Business Central API namespace")
                 }
@@ -385,7 +1114,7 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                let canSave = isDirty && !tempClientId.isEmpty && !tempTenantId.isEmpty
+                let canSave = isDirty && !tempClientId.isEmpty
                 Button("Save") { saveChanges() }
                     .tint(canSave ? .blue : .secondary)
                     .disabled(!canSave)
@@ -398,7 +1127,6 @@ struct SettingsView: View {
                     .padding(.top, 8)
             }
         }
-        }
         .onAppear {
             tempClientId = settings.clientId
             tempTenantId = settings.tenantId
@@ -406,6 +1134,28 @@ struct SettingsView: View {
             tempApiPublisher = settings.apiPublisher
             tempApiGroup = settings.apiGroup
             tempApiVersion = settings.apiVersion
+        }
+        .task(id: settings.useCustomNamespace) {
+            // Nudge a contacts count refresh when namespace mode toggles
+        }
+    }
+}
+
+extension SettingsView {
+    private func detectNamespace() async {
+        // Temporarily ensure settings reflect UI inputs
+        settings.apiPublisher = tempApiPublisher
+        settings.apiGroup = tempApiGroup
+        settings.apiVersion = tempApiVersion
+        let prev = settings.useCustomNamespace
+        settings.useCustomNamespace = true
+        do {
+            // Probe customers endpoint
+            let _: BusinessCentralResponse<CustomerDTO> = try await APIClient.shared.fetch(APIClient.shared.companiesPath("customers?$top=1"))
+            ToastManager.shared.show("Namespace detected")
+        } catch {
+            settings.useCustomNamespace = prev
+            ToastManager.shared.show("Namespace not available")
         }
     }
 }
@@ -430,45 +1180,54 @@ struct CustomersView: View {
     @State private var searchTask: Task<Void, Never>? = nil
     
     var body: some View {
-        NavigationView {
-            Group {
-                if !viewModel.customers.isEmpty {
-                    List {
-                        ForEach(Array(viewModel.customers.enumerated()), id: \.element.id) { idx, customer in
-                            NavigationLink(destination: CustomerDetailPagerView(customers: viewModel.customers, index: idx)) {
-                                HStack {
-                                    InitialsIcon(name: customer.displayNameOrName, color: .orange)
-                                    VStack(alignment: .leading) {
-                                        Text(customer.displayNameOrName)
-                                            .font(.headline)
-                                        Text("Number: \(customer.no)")
-                                            .font(.subheadline)
-                                    }
+        Group {
+            if !viewModel.customers.isEmpty {
+                List {
+                    ForEach(Array(viewModel.customers.enumerated()), id: \.element.id) { _, customer in
+                        NavigationLink(destination: CustomerDetailView(customer: customer)) {
+                            HStack(spacing: 12) {
+                                InitialsIcon(name: customer.displayNameOrName, color: .orange)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(customer.displayNameOrName)
+                                        .font(.headline)
+                                    Text(customer.no)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
                                 }
                             }
                         }
                     }
-                } else if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .padding()
-                } else {
-                    ProgressView("Loading customers...")
                 }
+                .listStyle(.plain)
+            } else if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .padding()
+            } else if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ContentUnavailableView(
+                    "No Customers Found",
+                    systemImage: "magnifyingglass",
+                    description: Text("No customers matched \"\(searchText)\".")
+                )
+            } else {
+                ProgressView("Loading customers...")
             }
-            .navigationTitle("Customers")
-            .searchable(text: $searchText, prompt: "Search customers")
         }
-        .task {
-            await viewModel.fetchCustomers()
+        .searchable(text: $searchText, prompt: "Search customers")
+        .task { await viewModel.fetchCustomers() }
+        .onReceive(NotificationCenter.default.publisher(for: .refreshCustomers)) { _ in
+            Task { await viewModel.fetchCustomers() }
         }
-        .onChange(of: searchText) { _, newValue in
+        .onChange(of: searchText) { newValue in
+            // Instant local filter for responsiveness
+            viewModel.applyLocalFilter(query: newValue)
             searchTask?.cancel()
             searchTask = Task { [q = newValue] in
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 if Task.isCancelled { return }
                 if q.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    await viewModel.fetchCustomers()
+                    // Restore local full list; avoid extra network if not needed
+                    await MainActor.run { viewModel.applyLocalFilter(query: "") }
                 } else {
                     await viewModel.searchCustomers(query: q)
                 }
@@ -483,45 +1242,52 @@ struct VendorsView: View {
     @State private var searchTask: Task<Void, Never>? = nil
     
     var body: some View {
-        NavigationView {
-            Group {
-                if !viewModel.vendors.isEmpty {
-                    List {
-                        ForEach(Array(viewModel.vendors.enumerated()), id: \.element.id) { idx, vendor in
-                            NavigationLink(destination: VendorDetailPagerView(vendors: viewModel.vendors, index: idx)) {
-                                HStack {
-                                    InitialsIcon(name: vendor.name, color: .blue)
-                                    VStack(alignment: .leading) {
-                                        Text(vendor.name)
-                                            .font(.headline)
-                                        Text("Number: \(vendor.no)")
-                                            .font(.subheadline)
-                                    }
+        Group {
+            if !viewModel.vendors.isEmpty {
+                List {
+                    ForEach(Array(viewModel.vendors.enumerated()), id: \.element.id) { idx, vendor in
+                        NavigationLink(destination: VendorDetailPagerView(vendors: viewModel.vendors, index: idx)) {
+                            HStack(spacing: 12) {
+                                InitialsIcon(name: vendor.name, color: .blue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(vendor.name)
+                                        .font(.headline)
+                                    Text(vendor.no)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
                                 }
                             }
                         }
                     }
-                } else if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .padding()
-                } else {
-                    ProgressView("Loading vendors...")
                 }
+                .listStyle(.plain)
+            } else if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .padding()
+            } else if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ContentUnavailableView(
+                    "No Vendors Found",
+                    systemImage: "magnifyingglass",
+                    description: Text("No vendors matched \"\(searchText)\".")
+                )
+            } else {
+                ProgressView("Loading vendors...")
             }
-            .navigationTitle("Vendors")
-            .searchable(text: $searchText, prompt: "Search vendors")
         }
-        .task {
-            await viewModel.fetchVendors()
+        .searchable(text: $searchText, prompt: "Search vendors")
+        .task { await viewModel.fetchVendors() }
+        .onReceive(NotificationCenter.default.publisher(for: .refreshVendors)) { _ in
+            Task { await viewModel.fetchVendors() }
         }
         .onChange(of: searchText) { _, newValue in
+            viewModel.applyLocalFilter(query: newValue)
             searchTask?.cancel()
             searchTask = Task { [q = newValue] in
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 if Task.isCancelled { return }
                 if q.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    await viewModel.fetchVendors()
+                    await MainActor.run { viewModel.applyLocalFilter(query: "") }
                 } else {
                     await viewModel.searchVendors(query: q)
                 }
@@ -662,7 +1428,7 @@ struct ItemDetailCardView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .onAppear { loader.load(companyId: settings.companyId, itemId: item.id, itemNumber: item.number) }
-        .onChange(of: item.id) { _, _ in
+        .onChange(of: item.id) { _ in
             loader.image = nil
             loader.load(companyId: settings.companyId, itemId: item.id, itemNumber: item.number)
         }
@@ -1289,13 +2055,18 @@ struct AzureSetupHelpView: View {
     @State private var didCopyToken = false
     @State private var didCopyScope = false
 
+    private var oauthTenant: String {
+        let tenant = settings.tenantId.trimmingCharacters(in: .whitespacesAndNewlines)
+        return tenant.isEmpty ? "organizations" : tenant
+    }
+
     private var authorizeURL: String {
-        "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/authorize"
+        "https://login.microsoftonline.com/\(oauthTenant)/oauth2/v2.0/authorize"
     }
     private var tokenURL: String {
-        "https://login.microsoftonline.com/\(settings.tenantId)/oauth2/v2.0/token"
+        "https://login.microsoftonline.com/\(oauthTenant)/oauth2/v2.0/token"
     }
-    private var scope: String { "https://api.businesscentral.dynamics.com/.default offline_access" }
+    private var scope: String { "openid profile offline_access https://api.businesscentral.dynamics.com/user_impersonation" }
 
     var body: some View {
         Form {

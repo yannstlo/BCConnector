@@ -93,6 +93,13 @@ class SettingsManager: ObservableObject {
     @Published var apiVersion: String {
         didSet { UserDefaults.standard.set(apiVersion, forKey: "apiVersion") }
     }
+    @Published var useCustomNamespace: Bool {
+        didSet { UserDefaults.standard.set(useCustomNamespace, forKey: "useCustomNamespace") }
+    }
+    // Optional link to your extension repo/AppSource page
+    @Published var premiumExtensionURL: String {
+        didSet { UserDefaults.standard.set(premiumExtensionURL, forKey: "premiumExtensionURL") }
+    }
     
     // User-managed custom environment names to probe/select (e.g., ["Production", "Sandbox"]).
     @Published var customEnvironments: [String] {
@@ -130,6 +137,8 @@ class SettingsManager: ObservableObject {
         self.apiPublisher = UserDefaults.standard.string(forKey: "apiPublisher") ?? "yann"
         self.apiGroup = UserDefaults.standard.string(forKey: "apiGroup") ?? "demo"
         self.apiVersion = UserDefaults.standard.string(forKey: "apiVersion") ?? "v1.0"
+        self.useCustomNamespace = UserDefaults.standard.bool(forKey: "useCustomNamespace")
+        self.premiumExtensionURL = UserDefaults.standard.string(forKey: "premiumExtensionURL") ?? ""
         self.customEnvironments = UserDefaults.standard.array(forKey: "customEnvironments") as? [String] ?? []
         self.hiddenEnvironments = UserDefaults.standard.array(forKey: "hiddenEnvironments") as? [String] ?? []
         self.networkLoggingEnabled = UserDefaults.standard.bool(forKey: "networkLoggingEnabled")

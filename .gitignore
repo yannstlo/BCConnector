@@ -6,6 +6,8 @@
 xcuserdata/
 *.xcscmblueprint
 *.xccheckout
+DerivedData/
+.deriveddata/
 
 # Swift Package Manager
 .build/
@@ -32,3 +34,4 @@ injected_container.swift
 *.ipa
 *.dSYM.zip
 *.dSYM
+simulator_screenshot_*.png
